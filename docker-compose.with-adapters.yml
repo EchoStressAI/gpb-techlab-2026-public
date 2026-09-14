@@ -1,0 +1,38 @@
+services:
+  api:
+    environment:
+      GPB_CASE1_RUNTIME_URL: http://case1-adapter:8101
+      GPB_CASE2_RUNTIME_URL: http://case2-adapter:8102
+    depends_on:
+      - case1-adapter
+      - case2-adapter
+
+  case1-adapter:
+    build: .
+    command:
+      - uvicorn
+      - gpb_submission.adapter_app:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8101"
+    environment:
+      GPB_ADAPTER_CASE_ID: CASE_1
+      GPB_INTERNAL_API_URL: ${GPB_INTERNAL_API_URL:?GPB_INTERNAL_API_URL must be set}
+      GPB_INTERNAL_API_TOKEN: ${GPB_INTERNAL_API_TOKEN:?GPB_INTERNAL_API_TOKEN must be set}
+    restart: unless-stopped
+
+  case2-adapter:
+    build: .
+    command:
+      - uvicorn
+      - gpb_submission.adapter_app:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8102"
+    environment:
+      GPB_ADAPTER_CASE_ID: CASE_2
+      GPB_INTERNAL_API_URL: ${GPB_INTERNAL_API_URL:?GPB_INTERNAL_API_URL must be set}
+      GPB_INTERNAL_API_TOKEN: ${GPB_INTERNAL_API_TOKEN:?GPB_INTERNAL_API_TOKEN must be set}
+    restart: unless-stopped
