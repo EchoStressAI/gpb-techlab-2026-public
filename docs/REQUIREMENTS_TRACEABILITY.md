@@ -8,7 +8,8 @@
 - **RUNTIME** — реализуется case-specific model runtime;
 - **UI** — реализуется пользовательским интерфейсом;
 - **VALIDATION** — подтверждается отдельным validation report конкретной модели;
-- **DEPLOYMENT** — проверяется на собранной on-prem версии.
+- **DEPLOYMENT** — проверяется на собранной on-prem версии;
+- **KNOWN GAP** — механизм реализован внутри runtime, но не выведен в публичный/пользовательский контракт; признанный, а не скрытый недостаток текущей версии.
 
 ## Функциональные требования
 
@@ -25,6 +26,7 @@
 | Акустический анализ речи | case runtime | RUNTIME |
 | Транскрипция/лингвистический анализ, если входят в финальную serving-конфигурацию | case runtime | RUNTIME; model-version specific |
 | Scientific/methodological rationale | documentation | PUBLIC DONE; [METHODOLOGY.md](METHODOLOGY.md), [SCIENTIFIC_BACKGROUND.md](SCIENTIFIC_BACKGROUND.md) |
+| Накопление статистики по каждому оператору (CASE 2 employee-period history) | case runtime + отдельный read-endpoint | KNOWN GAP: causal per-operator накопление реализовано внутри runtime и используется для period-level score, но отдельный публичный/пользовательский endpoint просмотра накопленной истории конкретного оператора пока не реализован |
 
 ## Архитектура и поставка
 
