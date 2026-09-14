@@ -1,6 +1,8 @@
 # Public repository policy
 
-Этот репозиторий публичный. Любая ветка и любой Pull Request также публичны.
+Этот репозиторий публичный. **Любая ветка, commit, Pull Request, issue и его вложения также следует считать публичными.**
+
+Публичность используется для прозрачности конкурсного integration layer и не означает, что весь внутренний продукт EchoStressAI или все исследовательские материалы должны находиться в GitHub.
 
 ## Разрешено публиковать
 
@@ -10,23 +12,79 @@
 - публичные контракты входов/выходов;
 - smoke/contract tests на синтетических данных;
 - описание архитектуры на уровне компонентов;
-- идентификаторы версий и публично безопасную эксплуатационную документацию.
+- Model Cards, validation protocol и responsible-use documentation;
+- идентификаторы публично безопасных версий;
+- эксплуатационную документацию;
+- aggregate research conclusions, если они не раскрывают закрытые данные/IP.
 
 ## Запрещено публиковать
 
 - аудио/транскрипты/метки Газпромбанка;
 - персональные данные;
-- токены, пароли, `.env`, приватные URL с credentials;
-- research notebooks и сырые результаты экспериментов;
-- training datasets и промежуточные feature tables;
-- приватные model artifacts без отдельного решения владельца IP;
-- универсальную интегральную методологию EchoStressAI, внутренние fusion-правила и иные proprietary core-компоненты;
+- токены, пароли, `.env`, private keys, cookies;
+- приватные URL с credentials;
+- research notebooks и сырые закрытые результаты экспериментов;
+- training datasets и промежуточные private feature tables;
+- private model artifacts без отдельного решения владельца IP;
+- universal integral methodology EchoStressAI;
+- exact proprietary fusion-правила/коэффициенты;
+- personal-baseline и private longitudinal rules;
+- закрытые внутренние Drive/storage paths, если они раскрывают инфраструктуру;
 - материалы, лицензия которых не разрешает публичное распространение.
 
-## Правило внесения изменений
+## Правило изменений
 
-Изменения в `main` — только через отдельную ветку и Pull Request после review. Прямые изменения `main` не используются.
+Для `main` используется:
 
-## Fail-safe правило
+```text
+отдельная branch → commits → Pull Request → CI → merge
+```
 
-Если есть сомнение, можно ли публиковать файл, файл не добавляется в этот репозиторий до отдельного review.
+Прямые рабочие commits в `main` не используются.
+
+Для этого public submission владелец репозитория может merge PR после собственных проверок и зелёного CI; отдельный внешний reviewer не является техническим требованием каждого изменения.
+
+## Fail-safe правило публикации
+
+Если есть сомнение, можно ли публиковать файл, файл **не добавляется** до проверки public/private boundary.
+
+Особенно внимательно проверять:
+
+```text
+.wav .mp3 .flac .zip .ipynb .pt .pth .pkl .joblib .parquet .env
+```
+
+## Git history
+
+Нельзя рассчитывать на «потом удалим». Даже удалённый файл мог уже попасть в:
+
+- Git history;
+- clone;
+- fork;
+- cache;
+- CI log/artifact.
+
+Поэтому sensitive material не должен коммититься даже во временную public branch.
+
+## Pull Request content
+
+Не вставлять в PR description/comments:
+
+- реальные транскрипты;
+- банковские filenames, если они чувствительны;
+- секреты;
+- private traceback с credentials/paths;
+- screenshots с персональными данными.
+
+## Rights and licensing
+
+Public visibility не является автоматической open-source лицензией. См. [../NOTICE.md](../NOTICE.md).
+
+Сторонние компоненты остаются под своими лицензиями.
+
+## Related documents
+
+- [IP_AND_PUBLIC_BOUNDARY.md](IP_AND_PUBLIC_BOUNDARY.md)
+- [DATA_PRIVACY_SECURITY.md](DATA_PRIVACY_SECURITY.md)
+- [../SECURITY.md](../SECURITY.md)
+- [../CONTRIBUTING.md](../CONTRIBUTING.md)
