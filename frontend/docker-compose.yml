@@ -1,0 +1,25 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+        VITE_PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-}
+    image: echostress-web:latest
+    container_name: echostress-web
+    ports:
+      - "5556:80"
+    environment:
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN:-_}
+      # Боевой сервис. Схема https обязательна: порт 8080 снаружи закрыт,
+      # наружу смотрит только TLS-вход.
+      API_UPSTREAM: ${API_UPSTREAM:-https://backend.example.com}
+      # Имя хоста для SNI и заголовка Host. Должно совпадать с именем
+      # в сертификате, иначе рукопожатие не состоится.
+      API_HOST: ${API_HOST:-backend.example.com}
+      NGINX_ENVSUBST_FILTER: "^(PUBLIC_DOMAIN|API_UPSTREAM|API_HOST)$$"
+    volumes:
+      - ./.htpasswd:/etc/nginx/.htpasswd:ro
+    restart: unless-stopped
+

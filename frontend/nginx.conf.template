@@ -1,0 +1,152 @@
+server {
+    listen 80;
+
+    # Домен подставляется из переменной PUBLIC_DOMAIN при старте контейнера
+    # (envsubst в официальном образе nginx). "_" — приём любого хоста.
+    server_name ${PUBLIC_DOMAIN};
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # --- Basic auth на стенд ---
+    # Объявлено на уровне server: закрывает страницы и ассеты.
+    # Исключения ниже — /healthz (для docker healthcheck) и /api
+    # (там доступ закрывает JWT, см. комментарий в location /api/).
+    # Файл паролей монтируется томом из docker-compose.
+    auth_basic "Restricted";
+    auth_basic_user_file /etc/nginx/.htpasswd;
+
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+    gzip_min_length 1024;
+
+    # Единственное исключение из basic auth: healthcheck контейнера,
+    # иначе docker получал бы 401 и считал сервис нездоровым.
+    location = /healthz {
+        auth_basic off;
+        access_log off;
+        add_header Content-Type text/plain;
+        return 200 "ok\n";
+    }
+
+    # Хэшированные ассеты Vite неизменяемы — кэшируем надолго.
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+
+    # index.html не кэшируем, иначе после деплоя пользователи
+    # продолжат тянуть старый бандл.
+    location = /index.html {
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+    }
+
+    # Проксирование на backend.
+    #
+    # Адрес вынесен в переменную намеренно: при литеральном proxy_pass
+    # nginx резолвит хост при старте и падает с "host not found in upstream",
+    # если сервиса api ещё нет. С переменной резолв происходит в момент
+    # запроса, поэтому контейнер поднимается без бэкенда, а /api отдаёт 502.
+    #
+    # resolver — встроенный DNS docker; без него переменная не резолвится.
+    # Встроенный резолвер пересылает внешние имена наверх, поэтому
+    # backend.example.com через него разрешается тоже. Публичный
+    # резолвер добавлен запасным на случай запуска вне compose.
+    resolver 127.0.0.11 1.1.1.1 ipv6=off valid=30s;
+
+    location /api/ {
+        # Basic auth здесь ОТКЛЮЧЕН намеренно.
+        #
+        # Он рассчитан на человека в браузере: сервер отвечает 401 с
+        # заголовком WWW-Authenticate, браузер показывает окно пароля.
+        # Для fetch/XHR это ломает работу — каждый фоновый запрос
+        # вызывает новое окно, и получается бесконечный запрос пароля.
+        #
+        # Доступ к API закрывает JWT: без валидного токена backend
+        # сам отвечает 401. Страницы и ассеты по-прежнему под basic auth,
+        # то есть снаружи стенд закрыт.
+        auth_basic off;
+
+        set $upstream "${API_UPSTREAM}";
+
+        # Префикс /api сохраняем: backend сам обслуживает /api/v1/...
+        # При proxy_pass с переменной и без URI-части nginx передаёт
+        # исходный путь как есть — это ровно то, что нужно.
+        proxy_pass $upstream$request_uri;
+
+        proxy_http_version 1.1;
+
+        # --- TLS до сервиса ---
+        #
+        # Апстрим внешний и работает по https. Два обязательных пункта,
+        # без которых соединение не встаёт:
+        #
+        #   proxy_ssl_server_name — включает SNI. Без него вход не поймёт,
+        #   какой сертификат отдавать, и рукопожатие оборвётся;
+        #
+        #   Host — имя сервиса, а НЕ $host. Раньше здесь стоял публичный
+        #   домен стенда: он подходил, пока backend был соседним
+        #   контейнером, но внешнему входу нужен его собственный хост.
+        proxy_ssl_server_name on;
+        proxy_ssl_name ${API_HOST};
+        proxy_ssl_protocols TLSv1.2 TLSv1.3;
+        # Сертификат настоящий (Let's Encrypt) — проверяем его.
+        proxy_ssl_verify on;
+        proxy_ssl_verify_depth 3;
+        proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+
+        proxy_set_header Host ${API_HOST};
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # Публичный адрес стенда уезжает отдельным заголовком — так
+        # сервис по-прежнему знает, откуда пришёл запрос.
+        proxy_set_header X-Forwarded-Host $host;
+
+        # Заголовки для WebSocket — понадобятся, если статусы обработки
+        # пойдут по сокету, а не поллингом.
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        # --- Большие записи и долгий счёт ---
+        #
+        # Предел размера записи по контракту — 512 МБ.
+        client_max_body_size 512m;
+        # Без этого nginx сначала целиком принимает 512 МБ на диск и лишь
+        # затем начинает передачу: пользователь видит «отправка» вдвое
+        # дольше нужного, а на диске стенда нужен запас места.
+        proxy_request_buffering off;
+        client_body_timeout 300s;
+
+        # Обработка идёт минутами. 300 с хватает с запасом: эталонная
+        # запись в 331 секунду считается около 70 секунд, но ответ
+        # на POST /v1/calls приходит сразу — ждёт только опрос.
+        proxy_connect_timeout 15s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
+
+        # --- Необязательно: токен на стороне прокси ---
+        #
+        # Если токен не должен попадать в браузер вовсе, раскомментируй
+        # строку ниже и передай API_TOKEN в окружении контейнера. Тогда
+        # заголовок подставляет nginx, а страница входа становится не
+        # нужна — доступ к стенду закрывает basic auth.
+        #
+        # Учти обратную сторону: любой, кто прошёл basic auth, получает
+        # полные права токена, и в журнале сервиса все действия будут
+        # от одного субъекта.
+        #
+        # proxy_set_header Authorization "Bearer ${API_TOKEN}";
+        #
+        # Раскомментировав, добавь API_TOKEN в NGINX_ENVSUBST_FILTER
+        # в docker-compose.yml — иначе envsubst оставит строку как есть
+        # и наружу уйдёт литерал вместо токена.
+    }
+
+    # SPA-фолбэк: любой неизвестный путь отдаёт index.html,
+    # иначе перезагрузка на /login вернёт 404.
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

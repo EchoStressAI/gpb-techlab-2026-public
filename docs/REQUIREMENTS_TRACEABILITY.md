@@ -19,10 +19,10 @@
 | Решение CASE 1 в первых 60 сек | integration contract + runtime | PUBLIC DONE / RUNTIME; [RUNTIME_CONTRACT.md](RUNTIME_CONTRACT.md) |
 | CASE 2: анализ состояния сотрудника | CASE 2 runtime + public API | RUNTIME; [CASE2_MODEL_CARD.md](CASE2_MODEL_CARD.md) |
 | Решение CASE 2 в первых 180 сек | integration contract + runtime | PUBLIC DONE / RUNTIME |
-| Импорт файла для постобработки | public API / UI | PUBLIC DONE для API; UI отдельно |
+| Импорт файла для постобработки | public API / UI | PUBLIC DONE; [frontend/src/components/DropZone.tsx](../frontend/src/components/DropZone.tsx) |
 | Batch/MVP processing | integration/runtime deployment | расширяемый слой; version-specific |
-| Отображение результата в интерфейсе | frontend | UI |
-| Объяснимые факторы результата | runtime + frontend | RUNTIME/UI; [EXPLAINABILITY.md](EXPLAINABILITY.md) |
+| Отображение результата в интерфейсе | frontend | PUBLIC DONE; [frontend/src/features/calls/ResultPanel.tsx](../frontend/src/features/calls/ResultPanel.tsx) |
+| Объяснимые факторы результата | runtime + frontend | PUBLIC DONE (UI) / RUNTIME (числа); [EXPLAINABILITY.md](EXPLAINABILITY.md), [frontend/src/features/calls/RiskPanel.tsx](../frontend/src/features/calls/RiskPanel.tsx) |
 | Акустический анализ речи | case runtime | RUNTIME |
 | Транскрипция/лингвистический анализ, если входят в финальную serving-конфигурацию | case runtime | RUNTIME; model-version specific |
 | Scientific/methodological rationale | documentation | PUBLIC DONE; [METHODOLOGY.md](METHODOLOGY.md), [SCIENTIFIC_BACKGROUND.md](SCIENTIFIC_BACKGROUND.md) |
@@ -36,7 +36,7 @@
 | Python / ML backend | integration + runtime | PUBLIC DONE для API; RUNTIME для inference |
 | On-prem deployment | deployment topology | PUBLIC architecture ready; [DEPLOYMENT.md](DEPLOYMENT.md) |
 | Готовый ML pipeline | case runtime | RUNTIME |
-| UI с минимальной конфигурацией | frontend | UI |
+| UI с минимальной конфигурацией | frontend | PUBLIC DONE; [frontend/README.md](../frontend/README.md) |
 | Архитектура решения | documentation | PUBLIC DONE; [ARCHITECTURE.md](ARCHITECTURE.md) |
 | Инструкция по развёртыванию | documentation | PUBLIC DONE; [DEPLOYMENT.md](DEPLOYMENT.md) |
 | Компоненты и версии библиотек | public package + runtime release manifest | PUBLIC DONE для integration; runtime version-specific; [COMPONENTS.md](COMPONENTS.md) |

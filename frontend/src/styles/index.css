@@ -1,0 +1,12 @@
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #F9F9F9;
+  color: #354D6C;
+  font-family: 'Open Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: #FF7313; text-decoration: none; }
+a:hover { color: #D95E08; }
+button { font-family: inherit; }

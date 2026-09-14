@@ -60,6 +60,7 @@ Audio upload ──────────> │ Public Integration API      │
 
 ```text
 src/gpb_submission/    FastAPI + runtime gateway + public contracts
+frontend/              React/TypeScript UI (см. frontend/README.md)
 tests/                 synthetic contract/smoke tests
 docs/                  архитектура, Model Cards, валидация, deployment, XAI
 Dockerfile              integration API image
@@ -68,6 +69,11 @@ docker-compose.yml      локальный запуск
 ```
 
 Полная карта: [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md).
+
+`frontend/` — интерфейс к API из этого же контракта: загрузка записи, статус
+обработки, отображение результата, история сотрудника (CASE 2). Backend-адрес
+в конфигурации — placeholder (`backend.example.com`); реальный указывается
+через `.env` при развёртывании и в Git не хранится.
 
 ## Что намеренно не публикуется
 
