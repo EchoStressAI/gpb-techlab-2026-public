@@ -1,0 +1,8 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      GPB_CASE1_RUNTIME_URL: ${GPB_CASE1_RUNTIME_URL:-}
+      GPB_CASE2_RUNTIME_URL: ${GPB_CASE2_RUNTIME_URL:-}

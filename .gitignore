@@ -1,0 +1,34 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.env
+.env.*
+.DS_Store
+coverage.xml
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Runtime/model artifacts are mounted or supplied separately.
+runtime/
+models/
+artifacts/
+*.pt
+*.pth
+*.joblib
+*.onnx
+*.parquet
+
+# Never commit source audio or bank/user data.
+*.wav
+*.mp3
+*.flac
+*.m4a
+*.ogg
+*.csv
+*.xlsx
+*.xls
+*.ipynb
