@@ -1,0 +1,21 @@
+# Дев-режим: docker compose -f docker-compose.dev.yml up
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: echostress-web-dev
+    ports:
+      - "5556:5173"
+    volumes:
+      # Исходники прокинуты внутрь — правки видны сразу.
+      - .:/app
+      # Анонимный том защищает node_modules контейнера
+      # от перезатирания папкой с хоста.
+      - /app/node_modules
+    environment:
+      # Нужно для срабатывания file-watch на некоторых хостах (Windows/WSL, NFS).
+      CHOKIDAR_USEPOLLING: "true"
+      # Куда dev-сервер проксирует /api. Значение по умолчанию совпадает
+      # с боевым адресом, переменная нужна для переключения на мок.
+      VITE_PROXY_TARGET: ${VITE_PROXY_TARGET:-https://backend.example.com}

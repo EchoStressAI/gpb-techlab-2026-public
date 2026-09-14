@@ -1,0 +1,12 @@
+node_modules
+dist
+*.tsbuildinfo
+*.log
+.DS_Store
+.env
+.env.local
+
+.htpasswd
+
+# Содержит токен, если он вписан в НАСТРОЙКИ
+scripts/dump_job.py

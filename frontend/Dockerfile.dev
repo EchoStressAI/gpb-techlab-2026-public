@@ -1,0 +1,15 @@
+# Образ для разработки: Vite dev-server с горячей перезагрузкой.
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+
+EXPOSE 5173
+
+# --host обязателен, иначе Vite слушает только 127.0.0.1
+# внутри контейнера и снаружи недоступен.
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
