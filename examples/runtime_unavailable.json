@@ -1,0 +1,8 @@
+{
+  "detail": {
+    "status": "MODEL_RUNTIME_UNAVAILABLE",
+    "case_id": "CASE_1",
+    "detail": "CASE_1 runtime is not configured"
+  },
+  "example_only": true
+}

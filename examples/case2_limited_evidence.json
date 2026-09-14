@@ -1,0 +1,28 @@
+{
+  "case_id": "CASE_2",
+  "source_filename": "synthetic_case2.wav",
+  "analysis_horizon_sec": 180,
+  "result": {
+    "status": "ok",
+    "case_id": "CASE_2",
+    "model_id": "EXAMPLE_ONLY_CASE2_RUNTIME",
+    "analysis_horizon_sec": 180,
+    "score": 0.58,
+    "score_type": "example_state_index",
+    "decision": "NO_AUTOMATED_DECISION",
+    "quality": {
+      "status": "LIMITED_EVIDENCE",
+      "speech_sec": 8.4,
+      "warnings": [
+        "low_speech_coverage"
+      ]
+    },
+    "xai": {
+      "summary": "Synthetic documentation example: the signal was calculated, but the evidence is limited and should not be treated as a conclusion about a person.",
+      "factors": [
+        "acoustic_state_signal"
+      ]
+    },
+    "example_only": true
+  }
+}

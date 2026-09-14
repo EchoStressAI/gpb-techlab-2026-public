@@ -1,0 +1,27 @@
+{
+  "case_id": "CASE_1",
+  "source_filename": "synthetic_case1.wav",
+  "analysis_horizon_sec": 60,
+  "result": {
+    "status": "ok",
+    "case_id": "CASE_1",
+    "model_id": "EXAMPLE_ONLY_CASE1_RUNTIME",
+    "analysis_horizon_sec": 60,
+    "score": 0.71,
+    "score_type": "example_index",
+    "decision": "REVIEW_REQUIRED",
+    "quality": {
+      "status": "OK",
+      "speech_sec": 34.2,
+      "warnings": []
+    },
+    "xai": {
+      "summary": "Synthetic documentation example. Real runtime explanations are model-specific.",
+      "factors": [
+        "speech_pattern_signal",
+        "dialogue_context_signal"
+      ]
+    },
+    "example_only": true
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "detail": {
+    "status": "MODEL_RUNTIME_CONTRACT_ERROR",
+    "case_id": "CASE_2",
+    "detail": "runtime horizon mismatch: expected 180, got 300"
+  },
+  "example_only": true
+}

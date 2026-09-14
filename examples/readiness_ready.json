@@ -1,0 +1,20 @@
+{
+  "status": "ready",
+  "runtimes": {
+    "CASE_1": {
+      "status": "ok",
+      "case_id": "CASE_1",
+      "configured": true,
+      "analysis_horizon_sec": 60,
+      "model_id": "EXAMPLE_ONLY_CASE1_RUNTIME"
+    },
+    "CASE_2": {
+      "status": "ok",
+      "case_id": "CASE_2",
+      "configured": true,
+      "analysis_horizon_sec": 180,
+      "model_id": "EXAMPLE_ONLY_CASE2_RUNTIME"
+    }
+  },
+  "example_only": true
+}
