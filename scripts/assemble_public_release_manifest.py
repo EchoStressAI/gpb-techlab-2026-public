@@ -133,10 +133,15 @@ def main() -> int:
     human_pass = False
     human_rate = None
     if human:
-        human_rate = human.get("joint_acceptance_rate")
-        human_pass = human.get("status") == "PASS" and isinstance(human_rate, (int, float)) and human_rate >= 0.80
+        human_rate = human.get("main_acceptance_rate")
+        human_pass = (
+            human.get("status") == "PASS"
+            and human.get("protocol_rule") == "Q2>=4 AND Q3>=4"
+            and isinstance(human_rate, (int, float))
+            and human_rate >= 0.80
+        )
     if args.require_human_xai and not human_pass:
-        failures.append("human explainability >=80% evidence required but not PASS")
+        failures.append("human explainability >=80% evidence required but frozen Q2/Q3 protocol is not PASS")
 
     public_commit = args.public_commit or git_head()
     if not public_commit:
@@ -144,7 +149,7 @@ def main() -> int:
 
     status = "PASS" if not failures else "INCOMPLETE"
     payload = {
-        "schema_version": "1.1",
+        "schema_version": "1.2",
         "status": status,
         "public_snapshot": {
             "repository": "EchoStressAI/gpb-techlab-2026-public",
@@ -182,7 +187,11 @@ def main() -> int:
         },
         "human_explainability": {
             "evidence_supplied": human is not None,
-            "joint_acceptance_rate": human_rate,
+            "protocol_rule": None if not human else human.get("protocol_rule"),
+            "unique_hr_respondents": None if not human else human.get("unique_hr_respondents"),
+            "valid_respondent_case_ratings": None if not human else human.get("valid_respondent_case_ratings"),
+            "main_acceptance_rate": human_rate,
+            "main_acceptance_wilson_95_ci": None if not human else human.get("main_acceptance_wilson_95_ci"),
             "criterion_80_percent_pass": human_pass,
         },
         "requirements": {
