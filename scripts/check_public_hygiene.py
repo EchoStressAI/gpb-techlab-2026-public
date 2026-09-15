@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Fail-closed hygiene checks for the public submission repository.
 
-The gate intentionally focuses on classes of files/secrets that should never be
-committed here. It does not claim to replace a human privacy/IP review.
+The gate intentionally focuses on classes of files/secrets/infrastructure hints
+that should never be committed here. It does not replace a human privacy/IP or
+brand-rights review.
 """
 
 from __future__ import annotations
@@ -14,63 +15,33 @@ from urllib.parse import unquote
 
 
 FORBIDDEN_SUFFIXES = {
-    ".wav",
-    ".mp3",
-    ".flac",
-    ".m4a",
-    ".ogg",
-    ".ipynb",
-    ".pt",
-    ".pth",
-    ".ckpt",
-    ".joblib",
-    ".pkl",
-    ".pickle",
-    ".parquet",
-    ".zip",
-    ".7z",
-    ".rar",
+    ".wav", ".mp3", ".flac", ".m4a", ".ogg",
+    ".ipynb", ".pt", ".pth", ".ckpt", ".joblib", ".pkl", ".pickle",
+    ".parquet", ".zip", ".7z", ".rar",
 }
 
 FORBIDDEN_NAMES = {
-    ".env",
-    ".env.local",
-    ".env.production",
-    "id_rsa",
-    "id_ed25519",
-    "credentials.json",
-    "service-account.json",
+    ".env", ".env.local", ".env.production",
+    ".htpasswd", ".htpasswd.example",
+    "id_rsa", "id_ed25519", "credentials.json", "service-account.json",
+    # Bank trademark assets are not stored in public Git unless publication
+    # rights are explicitly confirmed. Textual references to the case are fine.
+    "Gazprombank.svg",
 }
 
 SKIP_DIRS = {
-    ".git",
-    ".venv",
-    "venv",
-    "__pycache__",
-    ".pytest_cache",
-    ".mypy_cache",
-    ".ruff_cache",
-    "dist",
-    "build",
+    ".git", ".venv", "venv", "__pycache__", ".pytest_cache", ".mypy_cache",
+    ".ruff_cache", "dist", "build",
 }
 
 SENSITIVE_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
-    (
-        "private_key",
-        re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
-    ),
-    (
-        "github_classic_token",
-        re.compile(r"\bghp_[A-Za-z0-9]{30,}\b"),
-    ),
-    (
-        "github_fine_grained_token",
-        re.compile(r"\bgithub_pat_[A-Za-z0-9_]{40,}\b"),
-    ),
-    (
-        "internal_colab_drive_path",
-        re.compile("/content/drive/" + "MyDrive/"),
-    ),
+    ("private_key", re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----")),
+    ("github_classic_token", re.compile(r"\bghp_[A-Za-z0-9]{30,}\b")),
+    ("github_fine_grained_token", re.compile(r"\bgithub_pat_[A-Za-z0-9_]{40,}\b")),
+    ("internal_colab_drive_path", re.compile("/content/drive/" + "MyDrive/")),
+    # Public source/docs should not contain a live deployment hostname. Use
+    # documented placeholders (example.com) and inject the real value at deploy.
+    ("deployment_host_sslip", re.compile(r"\b(?:[a-z0-9-]+\.)?sslip\.io\b", re.I)),
 )
 
 MARKDOWN_LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
@@ -187,8 +158,8 @@ def main() -> int:
         return 1
 
     print("PUBLIC HYGIENE: PASS")
-    print("Checked forbidden artifact classes, sensitive text markers and relative Markdown links.")
-    print("Human privacy/IP review is still required for new public content.")
+    print("Checked forbidden artifacts, obvious secrets/infrastructure hints and relative Markdown links.")
+    print("Human privacy/IP/brand review is still required for new public content and commit messages.")
     return 0
 
 
