@@ -23,7 +23,7 @@ CASE 2 → первые 180 секунд
 Рекомендуемый порядок:
 
 1. [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) — что решаем;
-2. [MODEL_SEMANTICS.md](MODEL_SEMANTICS.md) — что фактически анализирует ML на безопасном смысловом уровне;
+2. [METHODOLOGY.md](METHODOLOGY.md) — безопасная смысловая структура ML и границы интерпретации;
 3. [DIAGRAMS.md](DIAGRAMS.md) — архитектура;
 4. [CASE1_MODEL_CARD.md](CASE1_MODEL_CARD.md) и [CASE2_MODEL_CARD.md](CASE2_MODEL_CARD.md) — модельные границы;
 5. [VALIDATION_EVIDENCE_INDEX.md](VALIDATION_EVIDENCE_INDEX.md) — где и чем подтверждается качество;
@@ -112,7 +112,7 @@ expert/semantic validity
 
 GitHub Actions проверяет код, contracts и public hygiene. Model quality подтверждается отдельным version-specific validation evidence. Экспертная рецензия помогает проверять интерпретацию и классы ошибок, но не объявляется банковской ground truth.
 
-См. [VALIDATION_PROTOCOL.md](VALIDATION_PROTOCOL.md) и [CASE2_EXPERT_REVIEW_LESSONS.md](CASE2_EXPERT_REVIEW_LESSONS.md).
+См. [VALIDATION_PROTOCOL.md](VALIDATION_PROTOCOL.md), [VALIDATION_EVIDENCE_INDEX.md](VALIDATION_EVIDENCE_INDEX.md) и [CASE2_EXPERT_REVIEW_LESSONS.md](CASE2_EXPERT_REVIEW_LESSONS.md).
 
 ## 8. Что считать сильным результатом демонстрации
 
@@ -155,8 +155,7 @@ curl -i http://127.0.0.1:8080/api/v1/readiness
 
 ```text
 Overview
-→ Model Semantics
-→ Model Cards
+→ Methodology / Model Cards
 → Architecture
 → Validation Evidence
 → Requirements Traceability
