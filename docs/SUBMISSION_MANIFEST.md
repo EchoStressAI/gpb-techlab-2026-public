@@ -85,10 +85,10 @@ release timestamp
 |---|---|
 | Назначение проекта | `PROJECT_OVERVIEW.md` |
 | Архитектура | `ARCHITECTURE.md`, `DIAGRAMS.md` |
-| Смысл ML | `MODEL_SEMANTICS.md`, Model Cards |
+| Смысл ML | `METHODOLOGY.md`, Model Cards |
 | API | `API_REFERENCE.md`, `RUNTIME_CONTRACT.md` |
 | Frontend | `frontend/`, `FRONTEND_INTEGRATION.md` |
-| Научная основа | `SCIENTIFIC_BACKGROUND.md`, `SCIENTIFIC_REFERENCES.md` |
+| Научная основа | `SCIENTIFIC_BACKGROUND.md` |
 | Expert review | `EXPERT_REVIEW_AND_VALIDATION.md`, `CASE2_EXPERT_REVIEW_LESSONS.md` |
 | Validation rules | `VALIDATION_PROTOCOL.md`, `VALIDATION_EVIDENCE_INDEX.md` |
 | ТЗ / traceability | `REQUIREMENTS_TRACEABILITY.md` |
@@ -121,9 +121,20 @@ Public repo содержит реальный integration/UI code, а не со�
 
 Если runtime отсутствует, система должна честно показывать unavailable/not-ready, а не генерировать synthetic model score.
 
-## 8. Перед публикацией ссылки
+## 8. Публичная ссылка и изменяемый `main`
 
-Перед передачей ссылки проверяются:
+Поскольку ссылка на repository может быть передана до финальной фиксации release, любые утверждения о конкретной версии следует привязывать к commit SHA или release tag.
+
+Это означает:
+
+- `main` может улучшаться через reviewable PR;
+- проверяемый snapshot должен быть однозначно идентифицируем;
+- model performance нельзя приписывать «репозиторию вообще» без model/runtime version;
+- финальный demo/release manifest должен содержать commit, model ids и дату.
+
+## 9. Перед демонстрацией/оценкой
+
+Перед конкретной демонстрацией проверяются:
 
 - public hygiene CI;
 - отсутствие банковских данных/weights/secrets;
