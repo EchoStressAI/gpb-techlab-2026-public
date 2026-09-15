@@ -127,6 +127,8 @@ pass/fail against declared resource/timing criteria
 
 Не требуется публиковать private model paths, exact internal stage timings или proprietary artifact layout.
 
+В source/runtime repository подготовлен отдельный measured collector. Его customer-safe output должен быть просмотрен перед переносом в public evidence.
+
 ## 6. Full E2E evidence
 
 Финальный E2E должен связывать один и тот же release candidate:
@@ -150,7 +152,50 @@ frontend
 - fail-closed/insufficient-evidence scenario;
 - отсутствие forbidden/private fields в public response/UI.
 
-## 7. Когда PRE_RELEASE_MANIFEST становится final
+## 7. Сборка единого public manifest из измеренного evidence
+
+Когда есть:
+
+1. customer-safe release acceptance JSON;
+2. runtime/hardware evidence JSON;
+3. при необходимости explainability summary;
+
+их можно связать одной командой:
+
+```bash
+python scripts/assemble_public_release_manifest.py \
+  --customer-evidence customer.evidence.json \
+  --runtime-evidence runtime_evidence.json \
+  --public-commit <public-main-sha> \
+  --output final_release_manifest.json
+```
+
+Для строгого protected release:
+
+```bash
+python scripts/assemble_public_release_manifest.py \
+  --customer-evidence customer.evidence.json \
+  --runtime-evidence runtime_evidence.json \
+  --explainability-summary explainability_acceptance_summary.json \
+  --public-commit <public-main-sha> \
+  --public-tag <approved-tag> \
+  --require-protected \
+  --require-image-digest \
+  --require-a100 \
+  --require-human-xai \
+  --output final_release_manifest.json
+```
+
+Каждый `--require-*` — fail-closed gate. Если evidence отсутствует, output получает `INCOMPLETE`, а команда возвращает ненулевой exit code.
+
+Это позволяет не путать два состояния:
+
+```text
+технически измерили только то, что уже можем → manifest с ограниченным набором gates
+финальная конкурсная/защищённая поставка → строгие required gates
+```
+
+## 8. Когда PRE_RELEASE_MANIFEST становится final
 
 `PRE_RELEASE_MANIFEST.json` нельзя просто переименовать вручную.
 
