@@ -6,6 +6,9 @@
 
 | Если нужно | Документ |
 |---|---|
+| Быстро понять решение за 5–10 минут | [REVIEWER_GUIDE.md](REVIEWER_GUIDE.md) |
+| Понять состав публичной поставки и границу public/private | [SUBMISSION_MANIFEST.md](SUBMISSION_MANIFEST.md) |
+| Понять, чем подтверждаются claims/метрики | [VALIDATION_EVIDENCE_INDEX.md](VALIDATION_EVIDENCE_INDEX.md) |
 | Понять задачу и состав решения | [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) |
 | Увидеть структуру репозитория | [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) |
 | Посмотреть визуальные схемы | [DIAGRAMS.md](DIAGRAMS.md) |
@@ -58,17 +61,18 @@
 
 Начать с:
 
-1. [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)
-2. [DIAGRAMS.md](DIAGRAMS.md)
-3. [REQUIREMENTS_TRACEABILITY.md](REQUIREMENTS_TRACEABILITY.md)
-4. [METHODOLOGY.md](METHODOLOGY.md)
-5. [CASE1_MODEL_CARD.md](CASE1_MODEL_CARD.md)
-6. [CASE2_MODEL_CARD.md](CASE2_MODEL_CARD.md)
-7. [CASE2_EXPERT_REVIEW_LESSONS.md](CASE2_EXPERT_REVIEW_LESSONS.md)
-8. [QUALITY_AND_EVIDENCE.md](QUALITY_AND_EVIDENCE.md)
-9. [LIMITATIONS_AND_RESPONSIBLE_USE.md](LIMITATIONS_AND_RESPONSIBLE_USE.md)
-10. [DEMO_GUIDE.md](DEMO_GUIDE.md)
-11. [TEAM.md](TEAM.md)
+1. [REVIEWER_GUIDE.md](REVIEWER_GUIDE.md)
+2. [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)
+3. [DIAGRAMS.md](DIAGRAMS.md)
+4. [REQUIREMENTS_TRACEABILITY.md](REQUIREMENTS_TRACEABILITY.md)
+5. [METHODOLOGY.md](METHODOLOGY.md)
+6. [CASE1_MODEL_CARD.md](CASE1_MODEL_CARD.md)
+7. [CASE2_MODEL_CARD.md](CASE2_MODEL_CARD.md)
+8. [VALIDATION_EVIDENCE_INDEX.md](VALIDATION_EVIDENCE_INDEX.md)
+9. [CASE2_EXPERT_REVIEW_LESSONS.md](CASE2_EXPERT_REVIEW_LESSONS.md)
+10. [QUALITY_AND_EVIDENCE.md](QUALITY_AND_EVIDENCE.md)
+11. [LIMITATIONS_AND_RESPONSIBLE_USE.md](LIMITATIONS_AND_RESPONSIBLE_USE.md)
+12. [DEMO_GUIDE.md](DEMO_GUIDE.md)
 
 ### Разработчик интеграции
 
@@ -92,12 +96,13 @@
 
 1. [METHODOLOGY.md](METHODOLOGY.md)
 2. [SCIENTIFIC_BACKGROUND.md](SCIENTIFIC_BACKGROUND.md)
-3. [VALIDATION_PROTOCOL.md](VALIDATION_PROTOCOL.md)
-4. [EXPERT_REVIEW_AND_VALIDATION.md](EXPERT_REVIEW_AND_VALIDATION.md)
-5. [CASE2_EXPERT_REVIEW_LESSONS.md](CASE2_EXPERT_REVIEW_LESSONS.md)
-6. [QUALITY_AND_EVIDENCE.md](QUALITY_AND_EVIDENCE.md)
-7. [REPRODUCIBILITY.md](REPRODUCIBILITY.md)
-8. Model Cards.
+3. [VALIDATION_EVIDENCE_INDEX.md](VALIDATION_EVIDENCE_INDEX.md)
+4. [VALIDATION_PROTOCOL.md](VALIDATION_PROTOCOL.md)
+5. [EXPERT_REVIEW_AND_VALIDATION.md](EXPERT_REVIEW_AND_VALIDATION.md)
+6. [CASE2_EXPERT_REVIEW_LESSONS.md](CASE2_EXPERT_REVIEW_LESSONS.md)
+7. [QUALITY_AND_EVIDENCE.md](QUALITY_AND_EVIDENCE.md)
+8. [REPRODUCIBILITY.md](REPRODUCIBILITY.md)
+9. Model Cards.
 
 ### DevOps / ИБ
 
@@ -125,4 +130,4 @@
 
 ## Статус документации
 
-Документация описывает публичный integration contract и методологические границы проекта. По мере подключения финальных case runtime будут добавляться version-specific runtime/validation notes без раскрытия закрытых training artifacts или банковских данных.
+Документация описывает публичный integration contract и методологические границы проекта. По мере подключения финальных case runtime добавляются version-specific runtime/validation notes без раскрытия закрытых training artifacts или банковских данных.
