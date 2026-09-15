@@ -38,3 +38,33 @@ jobs:
         run: npm ci
       - name: Typecheck + build
         run: npm run build
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate compose configuration
+        run: docker compose config >/tmp/compose.yml
+
+      - name: Build public API image
+        run: docker build -t echostress-gpb-public-api:ci .
+
+      - name: Smoke public API container
+        shell: bash
+        run: |
+          set -euo pipefail
+          cid=$(docker run -d -p 18080:8080 echostress-gpb-public-api:ci)
+          trap 'docker logs "$cid" || true; docker rm -f "$cid" >/dev/null 2>&1 || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:18080/health >/tmp/health.json; then
+              cat /tmp/health.json
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "API container health smoke failed" >&2
+          exit 1
+
+      - name: Build frontend image
+        run: docker build -t echostress-gpb-public-frontend:ci ./frontend
