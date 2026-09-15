@@ -1,6 +1,6 @@
 {
   "status": "PRE_RELEASE_DRAFT",
-  "evidence_cutoff_date": "2026-09-14",
+  "evidence_cutoff_date": "2026-09-15",
   "public_repository": "EchoStressAI/gpb-techlab-2026-public",
   "public_snapshot_commit": null,
   "public_release_tag": null,
@@ -32,6 +32,8 @@
   "release_evidence": {
     "public_ci": "PENDING_FINAL_SNAPSHOT",
     "docker_build_and_api_smoke": "AVAILABLE_IN_CI_ON_REVIEWED_BUNDLE; PENDING_FINAL_MAIN_SNAPSHOT",
+    "customer_release_evidence_validator": "READY_IN_PR24",
+    "explainability_acceptance_scorer": "READY_IN_PR24",
     "full_onprem_e2e": "PENDING",
     "container_image_digest": null,
     "resolved_sbom": "PENDING",
