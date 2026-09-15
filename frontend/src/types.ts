@@ -104,6 +104,11 @@ export interface UploadsResponse {
   returned?: number;
 }
 
+export type SpeakerRole = 'CALLER' | 'SUPPORT_OPERATOR';
+
+/** Public upload metadata only: which audio channel is assigned to which role. */
+export type ChannelRoles = Record<string, SpeakerRole>;
+
 export interface SubmitCallInput {
   file: File;
   case_id: CaseId;
@@ -127,7 +132,11 @@ export interface BatchResponse {
 
 // ---------- Transcript ----------
 
-export type SpeakerRole = 'CALLER' | 'SUPPORT_OPERATOR';
+export type AsrStatus =
+  | 'OK'
+  | 'EMPTY_ASR_WITH_SPEECH'
+  | 'ASR_ERROR'
+  | 'SKIPPED_NOT_ROUTED';
 
 export interface TranscriptTurn {
   dialogue_turn_index: number;
@@ -138,7 +147,7 @@ export interface TranscriptTurn {
   end_sec: number;
   speech_sec: number;
   text: string | null;
-  asr_status: string;
+  asr_status: AsrStatus;
   semantic_text_observable: boolean;
   gap_from_previous_sec: number | null;
   overlaps_previous: boolean;
