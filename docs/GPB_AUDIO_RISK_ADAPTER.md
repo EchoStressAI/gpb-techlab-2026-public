@@ -1,58 +1,52 @@
-# Adapter к локальному `gpb-audio-risk`
+# Bridge к локальному model runtime
 
 ## 1. Назначение
 
-Внутренний рабочий backend EchoStressAI уже имеет асинхронный multi-case API:
-
-```text
-POST /api/v1/jobs
-GET  /api/v1/jobs/{job_id}
-GET  /api/v1/jobs/{job_id}/case1
-GET  /api/v1/jobs/{job_id}/risk
-GET  /api/v1/model-status
-```
-
-Public submission использует более маленький runtime contract:
+Публичный submission использует компактный runtime contract:
 
 ```text
 GET  /health
 POST /v1/analyze
 ```
 
-`gpb_submission.adapters.gpb_audio_risk` связывает эти два интерфейса **без копирования model implementation в public Git**.
+Локальная модельная инфраструктура EchoStressAI может иметь более богатый асинхронный job API. Adapter связывает эти два уровня **без копирования model implementation, weights или research code в public Git**.
 
-## 2. Что делает adapter
-
-Для каждого кейса запускается отдельный adapter process.
+Смысловой принцип:
 
 ```text
 Public Integration API
       │
       ├── CASE 1 adapter ──┐
       │                    │
-      └── CASE 2 adapter ──┼──> private/local gpb-audio-risk API
+      └── CASE 2 adapter ──┼──> local EchoStressAI model backend
                            │
-                           └── async jobs + frozen models
+                           └── case-specific inference
 ```
+
+Public repo не зависит от имени или структуры private source repository. Для него важен только стабильный runtime contract и корректная public-safe projection результата.
+
+## 2. Что делает adapter
+
+Для каждого кейса может запускаться отдельный adapter process.
 
 Adapter:
 
 1. принимает `/v1/analyze`;
 2. проверяет 60/180 sec contract;
-3. отправляет файл в `/api/v1/jobs` внутреннего backend;
-4. опрашивает job status;
-5. получает `/case1` или `/risk`;
+3. передаёт аудио локальному model backend;
+4. ожидает завершения case-specific inference;
+5. получает готовый case result;
 6. формирует ограниченный public-safe response;
-7. **не проксирует legacy blocks, private traceback и точные numeric coefficients**.
+7. **не проксирует private traceback, legacy research blocks и точные model coefficients**.
 
 ## 3. Почему это лучше, чем переносить model code
 
 - public repo остаётся настоящим рабочим integration code;
-- реальные модели используются без дублирования исходников;
-- model weights/serving artifacts не публикуются;
-- внутренний backend можно менять независимо;
+- реальные модели используются без публикации их исходников/весов;
+- model backend можно обновлять независимо;
 - публичный API остаётся стабильным;
-- audio может оставаться в локальном/on-prem контуре.
+- аудио может оставаться внутри локального/on-prem контура;
+- implementation details backend не становятся частью внешнего contract.
 
 ## 4. Конфигурация adapter process
 
@@ -74,45 +68,28 @@ GPB_ADAPTER_POLL_INTERVAL_SEC=0.75
 
 Token не хранится в Git и передаётся через environment/secret manager.
 
-## 5. Требуемые права internal token
+## 5. Минимальные права service token
 
-Adapter должен иметь только права, необходимые для своего сценария. Точный набор зависит от конфигурации внутреннего AccessControl, но логически требуется возможность:
+Adapter должен получать только те права, которые необходимы для inference и чтения результата выбранного кейса.
 
-- submit call;
-- read job status;
-- read model status;
-- read case result/risk.
+Не требуется обычный пользовательский доступ к:
 
-Transcript/audit/admin access adapter не нужен для обычного inference.
+- полному audit log;
+- административным функциям;
+- произвольным внутренним model/debug endpoint;
+- research data.
 
-## 6. Health
+Принцип — least privilege.
 
-Adapter `/health` проверяет не только процесс upstream, но и **наличие реального PRIMARY** через авторизованный model-status.
+## 6. Health / readiness
 
-Для CASE 1 проверяется доступность:
+Adapter `/health` проверяет не просто жив ли upstream HTTP process, а готова ли соответствующая PRIMARY runtime.
 
-```text
-CASE1_INDUCTIVE_CDF_PRIMARY_V1
-```
+Для CASE 1 ожидается готовность case-specific PRIMARY модели; для CASE 2 — готовность своего PRIMARY runtime.
 
-Для CASE 2:
+Public layer при этом не обязан знать внутренние inventory keys или filesystem layout model artifacts.
 
-```text
-CASE2_OPEN_ACOUSTIC11_ORIENTED_V1
-```
-
-Если backend жив, но PRIMARY отсутствует, adapter сообщает:
-
-```json
-{
-  "status": "unavailable",
-  "case_id": "CASE_1",
-  "model_id": "CASE1_INDUCTIVE_CDF_PRIMARY_V1",
-  "analysis_horizon_sec": 60
-}
-```
-
-Поэтому public `/readiness` не становится зелёным только из-за живого HTTP-процесса.
+Если backend жив, но model runtime не готов, adapter возвращает состояние `unavailable`, и public `/readiness` остаётся fail-closed.
 
 ## 7. CASE 1 projection
 
@@ -120,41 +97,39 @@ Public-safe response может включать:
 
 - `primary_score`;
 - `decision_status`;
-- `binary_prediction`;
 - evidence/quality;
 - client speech/turn coverage;
 - recommendations;
 - безопасный XAI summary;
 - model/horizon provenance.
 
-Не проксируются внутренние word/char raw model outputs и private implementation details.
+Не проксируются:
+
+- raw outputs промежуточных текстовых моделей;
+- точные внутренние коэффициенты;
+- implementation-specific debug payloads;
+- private feature engineering details.
 
 ## 8. CASE 2 projection
 
 Public-safe response может включать:
 
-- `risk_score`;
-- relative percentile/band;
+- `risk_score` / relative state score;
+- relative percentile/band, если предусмотрены runtime;
 - model interpretation;
 - speech/chunk quality;
-- safe names of top XAI factors;
+- safe names/families of XAI factors;
 - model/horizon provenance.
 
-Точные стандартизированные значения, коэффициенты и additive numeric contributions остаются внутри local runtime.
+Точные стандартизированные значения, coefficients и полная numeric decomposition остаются внутри local runtime, если их публикация раскрывает обученные параметры.
 
-CASE 2 adapter также явно возвращает responsible-use marker:
+CASE 2 adapter также должен сохранять responsible-use semantics: результат — state/research signal, а не автоматическое кадровое решение.
 
-```json
-{
-  "automated_employment_decision": false
-}
-```
+## 9. Запуск adapter process
 
-Это state/research signal, а не механизм автоматического решения о сотруднике.
+CASE 1 и CASE 2 могут запускаться как два локальных adapter process с разными `GPB_ADAPTER_CASE_ID` и портами.
 
-## 9. Запуск напрямую
-
-CASE 1:
+Пример:
 
 ```bash
 export GPB_ADAPTER_CASE_ID=CASE_1
@@ -163,40 +138,26 @@ export GPB_INTERNAL_API_TOKEN='...'
 uvicorn gpb_submission.adapter_app:app --host 0.0.0.0 --port 8101
 ```
 
-CASE 2 запускается вторым process с `CASE_2` и портом 8102.
+Для CASE 2 используется `GPB_ADAPTER_CASE_ID=CASE_2` и другой локальный порт.
 
 ## 10. Docker Compose
 
-Добавлен override:
+Для локальной интеграции используется compose override:
 
 ```text
 docker-compose.with-adapters.yml
 ```
 
-Запуск:
-
-```bash
-export GPB_INTERNAL_API_URL=http://host.docker.internal:8081
-export GPB_INTERNAL_API_TOKEN='...'
-
-docker compose \
-  -f docker-compose.yml \
-  -f docker-compose.with-adapters.yml \
-  up --build
-```
-
-На Linux может потребоваться общая Docker network или подходящий host-gateway вместо `host.docker.internal`.
-
-Adapter ports не обязаны публиковаться наружу: integration API обращается к ним по compose network.
+Adapter ports не обязаны публиковаться наружу: integration API может обращаться к ним по внутренней Docker network.
 
 ## 11. Fail-closed behavior
 
 Adapter возвращает unavailable/error, если:
 
-- upstream недоступен;
-- job failed;
-- job timeout;
-- primary model отсутствует;
+- local backend недоступен;
+- inference job failed;
+- inference timeout;
+- PRIMARY model/runtime не готов;
 - upstream response нарушает ожидаемый contract.
 
 Ни один из этих режимов не превращается в fake score.
@@ -208,8 +169,37 @@ Adapter намеренно не содержит:
 - model weights;
 - training code;
 - private formulas;
-- banking datasets;
+- банковские datasets;
 - internal detailed XAI coefficients;
-- legacy research blocks.
+- legacy research blocks;
+- internal repository topology, не требуемую для интеграции.
 
-Он является **публичной транспортной/contract границей** между submission и существующим локальным model backend.
+Он является **публичной транспортной/contract границей** между submission и локальным model runtime.
+
+## 13. Что является публичным contract, а что implementation detail
+
+Публичный contract:
+
+```text
+case_id
+analysis horizon
+health/readiness
+input audio
+result status
+score semantics
+quality/evidence
+safe XAI
+```
+
+Implementation detail:
+
+```text
+private repository layout
+internal endpoint decomposition
+internal inventory keys
+filesystem paths
+model artifact names beyond public model identity
+research/debug payloads
+```
+
+Такой дизайн делает public repo понятным и рабочим, не превращая его в карту внутренней инфраструктуры EchoStressAI.
