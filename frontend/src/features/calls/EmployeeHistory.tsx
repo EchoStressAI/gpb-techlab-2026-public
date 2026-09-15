@@ -6,16 +6,12 @@ import { ApiError } from '../../api/client';
 import type { Employee, EmployeeCall } from '../../types';
 
 /**
- * Личная история сотрудника — кейс 2.
+ * Public-safe employee history for CASE 2.
  *
- * Смысл кейса в накоплении: проверенная единица наблюдения — период
- * работы человека, а не отдельный звонок. Поэтому история показана
- * таблицей по звонкам, но вывод по одной строке не делается и нигде
- * так не подписан.
- *
- * Метка выгорания (CONTROL) сервису неизвестна. Здесь она не
- * достраивается ни по числам, ни по динамике: неизвестно — значит
- * неизвестно.
+ * История показывает только временную последовательность и основной
+ * относительный индекс/полосу. Внутренние supporting signals (включая
+ * anxiety, hidden-emotion и иные research metrics) здесь намеренно не
+ * публикуются и не трактуются как причины primary score.
  */
 export function EmployeeHistory() {
   const [people, setPeople] = useState<Employee[] | null>(null);
@@ -50,7 +46,6 @@ export function EmployeeHistory() {
     setCalls(null);
     getEmployeeCalls(chosen, undefined, ac.signal)
       .then((list) => {
-        // Свежие сверху — как и в остальных таблицах.
         setCalls([...list].sort((a, b) => time(b) - time(a)));
         setError(null);
       })
@@ -71,17 +66,17 @@ export function EmployeeHistory() {
       boxShadow: shadow.card, overflow: 'hidden', marginTop: 16,
     }}>
       <div style={{ padding: '18px 24px' }}>
-        <div style={{ fontSize: 20, fontWeight: 700 }}>Личная история сотрудника</div>
+        <div style={{ fontSize: 20, fontWeight: 700 }}>История сотрудника</div>
         <div style={{ fontSize: 13, opacity: 0.65, marginTop: 4, lineHeight: 1.6 }}>
-          Проверенная единица наблюдения — период работы, а не отдельный
-          разговор. По одной строке вывод о человеке не делается.
+          Единица интерпретации — период/динамика. Один разговор не является
+          самостоятельным выводом о профессиональном состоянии человека.
         </div>
 
         {people === null ? (
           <div style={{ marginTop: 14, fontSize: 14, opacity: 0.7 }}>Загрузка списка…</div>
         ) : people.length === 0 ? (
           <div style={{ marginTop: 14, fontSize: 14, opacity: 0.7 }}>
-            {error ?? 'Сервис не знает ни одного сотрудника с историей'}
+            {error ?? 'Сервис не знает сотрудников с доступной историей'}
           </div>
         ) : (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
@@ -102,9 +97,7 @@ export function EmployeeHistory() {
                   }}
                 >
                   {p.employee_id}
-                  {count !== null && (
-                    <span style={{ fontWeight: 400, opacity: 0.7 }}> · {count}</span>
-                  )}
+                  {count !== null && <span style={{ fontWeight: 400, opacity: 0.7 }}> · {count}</span>}
                 </button>
               );
             })}
@@ -125,7 +118,7 @@ export function EmployeeHistory() {
   );
 }
 
-const COLS = '36px 1.4fr 1fr 1.2fr 1fr 1fr 1fr';
+const COLS = '44px 1.5fr 1fr 1.4fr';
 
 function CallsTable({ calls }: { calls: EmployeeCall[] }) {
   return (
@@ -138,10 +131,7 @@ function CallsTable({ calls }: { calls: EmployeeCall[] }) {
         <div>№</div>
         <div>Время разговора</div>
         <div>Индекс</div>
-        <div>Уровень</div>
-        <div>Тревожность</div>
-        <div>Эмоц. баланс</div>
-        <div>Скрытый негатив</div>
+        <div>Относительный уровень</div>
       </div>
 
       {calls.map((c, i) => (
@@ -153,14 +143,7 @@ function CallsTable({ calls }: { calls: EmployeeCall[] }) {
             borderTop: `1px solid ${color.border}60`,
           }}
         >
-          {/* Нумерация убывает сверху вниз, как в остальных таблицах. */}
-          <div style={{ opacity: 0.5, fontVariantNumeric: 'tabular-nums' }}>
-            {calls.length - i}
-          </div>
-          {/*
-            Время разговора, а не время загрузки: по нему строится
-            порядок истории.
-          */}
+          <div style={{ opacity: 0.5, fontVariantNumeric: 'tabular-nums' }}>{calls.length - i}</div>
           <div style={{ fontSize: 13, opacity: 0.8 }}>
             {c.call_datetime ? dateTime(c.call_datetime) : '—'}
           </div>
@@ -168,17 +151,6 @@ function CallsTable({ calls }: { calls: EmployeeCall[] }) {
             {fixed(c.risk_score, 3)}
           </div>
           <div style={{ fontSize: 13, opacity: 0.85 }}>{c.risk_band ?? '—'}</div>
-          {/* Supporting-метрики: объясняют состояние и динамику, но в
-              основной риск по Acoustic11 не входят. */}
-          <div style={{ fontVariantNumeric: 'tabular-nums', opacity: 0.85 }}>
-            {fixed(c.anxiety_n_1, 2)}
-          </div>
-          <div style={{ fontVariantNumeric: 'tabular-nums', opacity: 0.85 }}>
-            {fixed(c.emotional_balance, 2)}
-          </div>
-          <div style={{ fontVariantNumeric: 'tabular-nums', opacity: 0.85 }}>
-            {fixed(c.hidden_negative_share, 2)}
-          </div>
         </div>
       ))}
 
@@ -186,16 +158,14 @@ function CallsTable({ calls }: { calls: EmployeeCall[] }) {
         padding: '12px 24px', fontSize: 13, opacity: 0.7, lineHeight: 1.7,
         borderTop: `1px solid ${color.border}80`,
       }}>
-        Индекс — относительная ранговая величина модели, не вероятность
-        выгорания. Три правые колонки объясняют состояние и динамику, но в
-        основной расчёт риска не входят. Метка выгорания сервису
-        неизвестна и здесь не достраивается.
+        Индекс — относительная ранговая величина модели, а не вероятность
+        выгорания. Внутренние supporting metrics и детали model internals в
+        публичной истории не отображаются.
       </div>
     </>
   );
 }
 
-/** Время разговора для сортировки. Отсутствует — в конец списка. */
 function time(c: EmployeeCall): number {
   const t = c.call_datetime ? Date.parse(c.call_datetime) : NaN;
   return Number.isFinite(t) ? t : 0;
