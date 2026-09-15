@@ -47,6 +47,30 @@ def customer_evidence() -> dict:
     }
 
 
+def runtime_evidence() -> dict:
+    return {
+        "schema_version": "1.0",
+        "release_id": "candidate-1",
+        "hardware": {"gpu_names": ["NVIDIA A100-SXM4-80GB"], "a100_detected": True},
+        "cases": [
+            {
+                "case_id": "CASE_1",
+                "model_id": "CASE1_INDUCTIVE_CDF_PRIMARY_V1",
+                "status": "PASS",
+                "wall_clock_upload_to_done_sec": 42.0,
+                "gpu": {"sample_count": 10, "gpus": []},
+            },
+            {
+                "case_id": "CASE_2",
+                "model_id": "CASE2_OPEN_ACOUSTIC11_ORIENTED_V1",
+                "status": "PASS",
+                "wall_clock_upload_to_done_sec": 118.0,
+                "gpu": {"sample_count": 20, "gpus": []},
+            },
+        ],
+    }
+
+
 def test_customer_release_validator_functional_and_final(tmp_path: Path) -> None:
     evidence = customer_evidence()
     source = tmp_path / "evidence.json"
@@ -112,3 +136,62 @@ def test_explainability_acceptance_scorer(tmp_path: Path) -> None:
     assert payload["accepted_assessments"] == 4
     assert payload["joint_acceptance_rate"] == 0.8
     assert payload["status"] == "PASS"
+
+
+def test_public_release_manifest_assembler_respects_required_gates(tmp_path: Path) -> None:
+    customer = customer_evidence()
+    runtime = runtime_evidence()
+    human = {
+        "status": "PASS",
+        "joint_acceptance_rate": 0.8,
+        "valid_assessments": 10,
+        "unique_reviewers": 5,
+    }
+
+    customer_path = tmp_path / "customer.json"
+    runtime_path = tmp_path / "runtime.json"
+    human_path = tmp_path / "human.json"
+    output_path = tmp_path / "final.json"
+    customer_path.write_text(json.dumps(customer), encoding="utf-8")
+    runtime_path.write_text(json.dumps(runtime), encoding="utf-8")
+    human_path.write_text(json.dumps(human), encoding="utf-8")
+
+    incomplete = run_script(
+        "assemble_public_release_manifest.py",
+        "--customer-evidence",
+        str(customer_path),
+        "--runtime-evidence",
+        str(runtime_path),
+        "--explainability-summary",
+        str(human_path),
+        "--require-a100",
+        "--require-human-xai",
+        "--public-commit",
+        "abc123",
+        "--output",
+        str(output_path),
+    )
+    assert incomplete.returncode == 0, incomplete.stderr
+    payload = json.loads(incomplete.stdout)
+    assert payload["status"] == "PASS"
+    assert payload["hardware"]["a100_detected"] is True
+    assert payload["human_explainability"]["criterion_80_percent_pass"] is True
+
+    runtime["hardware"]["a100_detected"] = False
+    runtime_path.write_text(json.dumps(runtime), encoding="utf-8")
+    missing_a100 = run_script(
+        "assemble_public_release_manifest.py",
+        "--customer-evidence",
+        str(customer_path),
+        "--runtime-evidence",
+        str(runtime_path),
+        "--require-a100",
+        "--public-commit",
+        "abc123",
+        "--output",
+        str(output_path),
+    )
+    assert missing_a100.returncode == 1
+    failed = json.loads(missing_a100.stdout)
+    assert failed["status"] == "INCOMPLETE"
+    assert any("A100" in item for item in failed["failures"])
