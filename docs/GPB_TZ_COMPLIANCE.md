@@ -1,216 +1,291 @@
 # Соответствие ТЗ Газпромбанка · TechLab 2026
 
-Этот документ сопоставляет требования конкурсного ТЗ с фактической архитектурой и доказательствами проекта EchoStressAI. Его цель — дать reviewer прямой ответ на вопрос **«где в решении закрыто каждое требование»**, не подменяя model validation техническим CI и не раскрывая proprietary model IP.
+Этот документ сопоставляет официальный конкурсный ТЗ с фактическим состоянием EchoStressAI. Он специально разделяет три вещи:
 
-Статусы ниже описывают не «сделано / не сделано», а **тип реализации и доказательства**:
+```text
+реализовано в public/source
+≠
+реализовано в connected model runtime
+≠
+подтверждено release-level evidence
+```
 
-- **PUBLIC** — проверяется в этом public repository;
-- **CONNECTED RUNTIME** — реализуется подключаемым локальным model runtime;
-- **FRONTEND** — реализуется пользовательским интерфейсом;
-- **VALIDATION** — подтверждается version-specific model evidence;
-- **DEPLOYMENT** — подтверждается собранным deployment snapshot / smoke;
-- **HUMAN VALIDATION** — требует отдельной проверки с людьми/экспертами.
+Это важно, чтобы не выдавать наличие архитектуры или protocol за уже измеренное выполнение критерия.
+
+## Обозначения
+
+- **PUBLIC** — проверяется в этом repository.
+- **FRONTEND** — реализовано в public UI.
+- **CONNECTED RUNTIME** — относится к локальному versioned model runtime.
+- **VALIDATION** — подтверждается model-validation report конкретной версии.
+- **DEPLOYMENT EVIDENCE** — требует frozen deployment/smoke/benchmark.
+- **HUMAN EVIDENCE** — требует отдельной проверки с людьми.
+- **RELEASE CHECK** — не следует объявлять выполненным до фиксации runtime manifest / benchmark / acceptance evidence.
 
 ## 1. Целевые задачи
 
-| Требование ТЗ | Реализация EchoStressAI | Evidence |
+| Требование ТЗ | Текущее состояние EchoStressAI | Evidence |
 |---|---|---|
-| CASE 1: определить риск нахождения клиента под внешним воздействием | Отдельный CASE 1 PRIMARY; анализируется клиентская сторона | CONNECTED RUNTIME + CASE 1 Model Card |
-| CASE 1: решение в первые 60 секунд | Horizon зафиксирован как часть контракта | PUBLIC contract + runtime smoke |
-| CASE 1: результат отображается в интерфейсе | Отдельный CASE 1 экран/результат | FRONTEND |
-| CASE 2: оценить риск неблагоприятного профессионального состояния / выгорания | Отдельный CASE 2 PRIMARY с осторожной интерпретацией как relative model signal | CONNECTED RUNTIME + CASE 2 Model Card |
-| CASE 2: решение в первые 180 секунд | Horizon зафиксирован как часть контракта | PUBLIC contract + runtime smoke |
-| CASE 2: постобработка записи | Upload/API/UI работают с загруженными файлами | PUBLIC + FRONTEND |
-| CASE 2: результат отображается в интерфейсе | Отдельный CASE 2 result flow | FRONTEND |
+| CASE 1: определить состояние клиента / риск нахождения под воздействием | Отдельный CASE 1 PRIMARY; финальный public claim ограничен клиентской стороной | CONNECTED RUNTIME + Model Card + VALIDATION |
+| CASE 1: решение в первых 60 сек | Аналитический horizon зафиксирован как 60 сек | PUBLIC contract + runtime smoke |
+| CASE 1: показать результат в интерфейсе | Реализован отдельный CASE 1 flow | FRONTEND |
+| CASE 2: выявить риск эмоционального выгорания / неблагоприятного состояния | Отдельный CASE 2 PRIMARY с relative employee-period semantics | CONNECTED RUNTIME + Model Card + VALIDATION |
+| CASE 2: решение в первых 180 сек | Аналитический horizon зафиксирован как 180 сек | PUBLIC contract + runtime smoke |
+| CASE 2: постобработка записи | File upload и processing flow реализованы | PUBLIC + FRONTEND |
+| CASE 2: показать результат в интерфейсе | Реализован отдельный CASE 2 flow | FRONTEND |
 
 Связанные документы: [CASE1_MODEL_CARD.md](CASE1_MODEL_CARD.md), [CASE2_MODEL_CARD.md](CASE2_MODEL_CARD.md), [RUNTIME_CONTRACT.md](RUNTIME_CONTRACT.md).
 
-## 2. Функциональность
+## 2. В ТЗ есть два разных временных требования — их нельзя смешивать
 
-### Готовый ML pipeline
+ТЗ содержит одновременно:
 
-Public repository содержит transport/integration/UI слой. Реальный inference выполняется case-specific локальными runtime-компонентами. Это позволяет оставить serving artifacts и model weights вне открытого Git, сохранив воспроизводимый API contract.
+1. **аналитический horizon**: решение должно формироваться в первых 60 сек для CASE 1 и первых 180 сек для CASE 2;
+2. **batch response-time expectation**: допустимое время ответа — до 60/180 сек в зависимости от задачи.
 
-Evidence:
+Public contract уже фиксирует **какой материал модель имеет право использовать**. Это не является измерением wall-clock latency.
 
-- [ARCHITECTURE.md](ARCHITECTURE.md)
-- [RUNTIME_CONTRACT.md](RUNTIME_CONTRACT.md)
-- [GPB_AUDIO_RISK_ADAPTER.md](GPB_AUDIO_RISK_ADAPTER.md)
-
-### Акустика + транскрибированный текст + лингвистический анализ
-
-В проекте исследованы и поддерживаются **акустический и текстовый контуры**, но финальная PRIMARY-конфигурация выбирается по validation, а не по принципу «обязательно слить все модальности».
-
-- CASE 1 использует клиентский речевой/семантический контекст и supporting state information;
-- CASE 2 PRIMARY использует объяснимый акустический путь, потому что в текущей validation он оказался сильнее и проще для deployment;
-- текстовый CASE 2 контур исследован отдельно и может подключаться как дополнительный semantic layer, но не объявляется частью PRIMARY только ради формального усложнения архитектуры.
-
-Таким образом, требование мультимодального анализа закрывается **на уровне solution architecture**, при этом конкретный production scorer может использовать подмножество модальностей, если это подтверждено validation.
-
-Методологическая граница описана в [METHODOLOGY.md](METHODOLOGY.md) и [EXPLAINABILITY.md](EXPLAINABILITY.md).
-
-### Batch / набор накопленных записей
-
-Frontend позволяет добавить **несколько файлов в одну очередь**, после чего они отправляются и отслеживаются как набор заданий. Реализация может отправлять записи поштучно внутри UI-очереди для более прозрачной обработки ошибок и progress по каждому файлу; это не меняет batch-сценарий для пользователя.
-
-Backend API также предусматривает batch-compatible processing flow.
-
-### Импорт файлов через UI
-
-Реализован drag-and-drop / file picker; допускается очередь из нескольких записей. См. `frontend/` и [FRONTEND_INTEGRATION.md](FRONTEND_INTEGRATION.md).
-
-## 3. Ограничения по моделям и архитектуре
-
-### Не LLM
-
-Основной scoring path не должен зависеть от генеративной LLM. Для speech representations допустимы специализированные speech/audio encoders; downstream task-specific scorers могут быть легче и интерпретируемее, если это даёт лучшую validation/deployment trade-off.
-
-EchoStressAI использует **hybrid architecture**: representation / acoustic / semantic layers и отдельные task-specific scorers. Мы не утверждаем, что каждый downstream scorer сам является Transformer.
-
-### Open-source / transformer expectations
-
-ТЗ ориентирует решение на быстрые open-source neural/transformer models. В проекте такой класс моделей используется в speech/state research/runtime layers; финальные PRIMARY scorers выбираются по качеству, интерпретируемости и устойчивости.
-
-Точный runtime manifest конкретного релиза должен фиксировать используемые model/framework identities и лицензии.
-
-### Запрещённые готовые модели
-
-ТЗ отдельно запрещает использование готовых TIM-Net / «АБК» / GigaAM Emo как готовых моделей решения. Public repository не содержит этих model artifacts. Перед финальным connected-runtime snapshot это должно быть подтверждено runtime manifest/SBOM.
-
-## 4. Вычислительные ограничения
-
-ТЗ задаёт верхний ориентир **1 × NVIDIA A100**.
-
-Public integration layer GPU не требует. Ресурсный профиль ML runtime является свойством конкретной serving-версии и должен подтверждаться deployment benchmark.
-
-Принцип acceptance:
+Поэтому корректный status:
 
 ```text
-public API/frontend
-+ CASE 1 runtime
-+ CASE 2 runtime
-<= согласованный ресурсный профиль 1 × A100
+fixed analysis horizon → implemented / contract-tested
+end-to-end response time ≤60/180 sec → RELEASE CHECK / resource benchmark
 ```
 
-До появления зафиксированного benchmark нельзя выдавать теоретическую совместимость за измеренный production result.
+До benchmark конкретного frozen runtime нельзя писать, что latency-критерий выполнен только потому, что model horizon равен 60/180 секундам.
 
-См. [SYSTEM_REQUIREMENTS.md](SYSTEM_REQUIREMENTS.md).
+См. [RESOURCE_BENCHMARK_PROTOCOL.md](RESOURCE_BENCHMARK_PROTOCOL.md).
 
-## 5. Код и сборка
+## 3. Готовый ML pipeline
 
-| Требование ТЗ | Реализация |
+Public repository содержит frontend, integration API, runtime contracts/adapters, Docker/CI и tests. Реальный model inference выполняется connected case-specific runtime.
+
+Это означает:
+
+- public software layer воспроизводим и проверяем;
+- model weights/training implementation не обязаны быть открытыми;
+- финальный конкурсный snapshot должен связать public commit с конкретными runtime/model identities.
+
+Evidence: [ARCHITECTURE.md](ARCHITECTURE.md), [RUNTIME_CONTRACT.md](RUNTIME_CONTRACT.md), [SUBMISSION_MANIFEST.md](SUBMISSION_MANIFEST.md).
+
+## 4. Акустика + транскрибированный текст + лингвистический анализ
+
+ТЗ прямо требует анализа акустических свойств голоса и транскрибированного текста, включая лингвистический анализ.
+
+Фактическая архитектура проекта **hybrid**:
+
+- CASE 1 использует client-side semantic/text information и supporting speech-state context;
+- CASE 2 исследовал acoustic, text и fusion branches;
+- финальный CASE 2 PRIMARY выбран acoustic-first, потому что text/fusion не дал достаточного устойчивого прироста для оправдания дополнительной serving complexity.
+
+Поэтому нельзя формулировать это как «каждый PRIMARY обязательно использует одновременно все модальности». Корректная формулировка:
+
+> мультимодальный анализ реализован/исследован на уровне solution architecture, а состав конкретного frozen PRIMARY выбирается по validation.
+
+Если заказчик трактует этот пункт как обязательное одновременное использование acoustic+text **в каждом финальном scorer**, это требует отдельного согласования: текущий CASE 2 PRIMARY намеренно acoustic-only.
+
+## 5. Batch и импорт файлов
+
+ТЗ требует:
+
+- batch-processing накопленных данных;
+- импорт файлов через UI;
+- postprocessing.
+
+Public frontend поддерживает очередь нескольких файлов и их обработку/отслеживание. Backend contract поддерживает job/batch-compatible processing semantics.
+
+Evidence: `frontend/`, [FRONTEND_INTEGRATION.md](FRONTEND_INTEGRATION.md), [API_REFERENCE.md](API_REFERENCE.md).
+
+## 6. Требование к типу моделей: neural / transformer / open-source / non-LLM
+
+Официальный ТЗ формулирует архитектурное ожидание как быстрые нейросетевые модели — трансформеры, open-source с открытым исходным кодом, не LLM.
+
+Фактическое решение использует **разные model classes по слоям**:
+
+```text
+speech/state representation layers
++ acoustic/semantic representations
++ lightweight task-specific scorers
+```
+
+В исследовательских/state слоях используются neural speech representations. При этом финальные task-specific PRIMARY scorers могут быть легче и интерпретируемее; CASE 2 PRIMARY, например, сознательно не усложняется Transformer-блоком только ради формальной однородности.
+
+Поэтому этот пункт нельзя считать автоматически закрытым одной архитектурной фразой. Для финального acceptance требуется **runtime manifest**, где зафиксированы model families, source/license и роли компонентов.
+
+Отдельная оговорка:
+
+> если требование интерпретируется буквально как «каждый финальный task-specific scorer обязан сам быть Transformer-моделью», текущая hybrid architecture не соответствует такой буквальной трактовке и это нужно согласовать с заказчиком, а не маскировать документацией.
+
+См. [MODEL_RESOURCE_PROFILE.md](MODEL_RESOURCE_PROFILE.md) и [DEPENDENCIES_AND_LICENSES.md](DEPENDENCIES_AND_LICENSES.md).
+
+## 7. Запрещённые готовые модели
+
+ТЗ запрещает использовать как готовые модели решения:
+
+```text
+TIM-Net
+«АБК»
+GigaAM Emo
+```
+
+Public Git не содержит этих artifacts. Однако окончательная проверка относится не только к public repo, но и к connected runtime.
+
+Status: **RELEASE CHECK** — подтвердить runtime manifest/SBOM.
+
+## 8. Ограничение 1×NVIDIA A100
+
+ТЗ задаёт GPU ceiling `1 × NVIDIA A100`.
+
+Public integration/frontend GPU не требует. Но это не доказывает, что вся connected inference topology укладывается в ceiling.
+
+Status:
+
+```text
+architecture → compatible by design
+measured full-runtime compliance → RELEASE CHECK
+```
+
+Нужен benchmark конкретного snapshot:
+
+- CASE 1 + CASE 2 runtime;
+- cold/warm processing;
+- peak VRAM;
+- host RAM;
+- latency;
+- concurrency;
+- external-network audit;
+- container/model identities.
+
+## 9. Docker / Python / on-prem
+
+| Требование ТЗ | Состояние |
 |---|---|
-| Docker image | Dockerfile + compose topology; final connected-runtime image/digest фиксируется отдельно |
-| Python preferred | Public backend — Python/FastAPI; runtime contract не мешает Python/PyTorch model serving |
-| PyTorch и аналогичные ML-библиотеки | относятся к concrete model runtime; public gateway не требует тащить ML framework в integration image |
-| On-prem | архитектура рассчитана на локальный runtime без передачи аудио во внешний cloud |
+| Docker image | public API/frontend images и compose build проверяются CI; connected runtime image identity фиксируется отдельно |
+| Python preferred | public backend — Python/FastAPI |
+| PyTorch и аналогичные библиотеки | version-specific model runtime; фиксируется manifest/SBOM |
+| On-prem | topology и deployment guide предусмотрены; full connected-runtime smoke — DEPLOYMENT EVIDENCE |
 
 См. [DEPLOYMENT.md](DEPLOYMENT.md), [SYSTEM_REQUIREMENTS.md](SYSTEM_REQUIREMENTS.md), [COMPONENTS.md](COMPONENTS.md).
 
-## 6. Образ финального решения
+## 10. Образ финального MVP
 
-ТЗ ожидает готовое MVP с UI и backend ML pipeline.
-
-В public repository находятся:
+Public repository содержит:
 
 ```text
 frontend
 + integration API
 + runtime contracts/adapters
 + Docker integration
-+ tests
-+ documentation
++ CI/tests
++ evaluator-facing documentation
 ```
 
-Подключаемые model runtime дают реальный CASE 1 / CASE 2 inference. Отсутствие runtime не маскируется fake score: система работает fail-closed.
+Реальный model inference появляется при подключении frozen runtime. Если runtime отсутствует или нарушает contract, система fail-closed.
 
-## 7. Презентационные требования
+Для утверждения «финальный MVP полностью готов» нужен один зафиксированный end-to-end snapshot с реальными runtime/model/container identities и smoke evidence.
 
-| Требование | Где раскрыто |
+## 11. Требования к презентации и документации
+
+| Требование ТЗ | Где раскрыто |
 |---|---|
-| Подход к разработке модели | [METHODOLOGY.md](METHODOLOGY.md) |
-| Научная/методологическая база | [SCIENTIFIC_BACKGROUND.md](SCIENTIFIC_BACKGROUND.md) |
+| Подход к разработке | [METHODOLOGY.md](METHODOLOGY.md), [MODEL_SELECTION_AUDIT.md](MODEL_SELECTION_AUDIT.md) |
+| Научная база | [SCIENTIFIC_BACKGROUND.md](SCIENTIFIC_BACKGROUND.md), [SCIENTIFIC_REFERENCES.md](SCIENTIFIC_REFERENCES.md) |
 | Ограничения | [LIMITATIONS_AND_RESPONSIBLE_USE.md](LIMITATIONS_AND_RESPONSIBLE_USE.md) |
-| Перспективы развития / альтернативные сценарии | [ROADMAP.md](ROADMAP.md) |
-| Команда, регалии, роли | [TEAM.md](TEAM.md) |
-
-## 8. Сопроводительная документация
-
-| Требование | Документ |
-|---|---|
+| Перспективы / альтернативные сценарии | [ROADMAP.md](ROADMAP.md) |
+| Команда / регалии | [TEAM.md](TEAM.md) |
 | Архитектура | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | Инструкция по развёртыванию | [DEPLOYMENT.md](DEPLOYMENT.md) |
-| Компоненты / библиотеки | [COMPONENTS.md](COMPONENTS.md) |
-| Системные требования | [SYSTEM_REQUIREMENTS.md](SYSTEM_REQUIREMENTS.md) |
-| API | [API_REFERENCE.md](API_REFERENCE.md) |
-| Runtime contract | [RUNTIME_CONTRACT.md](RUNTIME_CONTRACT.md) |
-| ИБ / privacy | [DATA_PRIVACY_SECURITY.md](DATA_PRIVACY_SECURITY.md) |
-| Финальная проверка | [ACCEPTANCE_CHECKLIST.md](ACCEPTANCE_CHECKLIST.md) |
+| Компоненты / версии | [COMPONENTS.md](COMPONENTS.md), [DEPENDENCIES_AND_LICENSES.md](DEPENDENCIES_AND_LICENSES.md) |
 
-## 9. Критерии оценивания CASE 1
+## 12. Критерии CASE 1
 
-ТЗ делает основной метрикой **PR AUC**, дополнительной — ROC AUC, а для каскадного сценария отдельно рассматривает высокую precision безопасного класса и weighted F1.
+ТЗ:
 
-В EchoStressAI каскадность рассматривается как **опциональная operational pattern**, а не обязательная архитектура. Ключевой принцип финальной модели — не оптимизировать метрику за счёт процедурного shortcut/operator workflow.
+- основная метрика — PR AUC;
+- ROC AUC — дополнительная, ориентир 75%;
+- каскад допустим, но не обязателен;
+- при каскаде отдельно рассматриваются precision безопасного класса и weighted F1.
 
-Поэтому CASE 1 evidence должен включать:
-
-- PR AUC;
-- ROC AUC;
-- Weighted F1;
-- Precision/coverage для safe-negative режима, если он используется;
-- долю `INSUFFICIENT_EVIDENCE`;
-- fixed 60-sec protocol;
-- leakage/shortcut audit.
-
-Правила публикации метрик: [VALIDATION_PROTOCOL.md](VALIDATION_PROTOCOL.md).
-
-## 10. Критерии оценивания CASE 2
-
-ТЗ задаёт:
-
-- ROC AUC не ниже 0.75;
-- прозрачность/доступность объяснений не ниже 80%.
-
-Эти два критерия требуют **разного evidence**:
-
-### ROC AUC
-
-Подтверждается version-specific model validation с описанием split/grouping, sample size, horizon и model identity.
-
-### Explainability ≥80%
-
-Не должно подменяться наличием SHAP/feature contributions или красивого UI. Это отдельный **human-acceptance criterion**: заранее определённый набор кейсов, анкета/критерии понятности, респонденты и правило расчёта 80%.
-
-До проведения такого protocol корректная формулировка — «объяснения реализованы и доступны», а не «80% объяснимости достигнуто».
-
-## 11. Что остаётся version-specific acceptance evidence
-
-Даже при полном public repo следующие вещи должны фиксироваться для конкретного финального snapshot:
-
-- public commit/tag;
-- CASE 1 / CASE 2 model IDs;
-- model validation report;
-- full Docker/runtime image identity;
-- 1×A100 resource benchmark;
-- end-to-end latency 60/180 sec;
-- human explainability acceptance;
-- on-prem smoke;
-- dependency/runtime manifest.
-
-Это не недостаток public Git: это правильное разделение **source transparency** и **release evidence**.
-
-## 12. Итог
-
-Проект закрывает требования ТЗ не одним артефактом, а совокупностью:
+Public validation snapshot:
 
 ```text
-public code
-+ frontend
-+ connected model runtime
-+ validation evidence
-+ deployment evidence
-+ human explainability validation
+CLIENT-only PRIMARY
+PR AUC       0.3654
+ROC AUC      0.7569
+Weighted F1  0.8190
 ```
 
-Именно эта совокупность должна оцениваться как конкурсное решение.
+Высокий operator-side result не используется как финальный client-state claim после workflow-shortcut audit.
+
+Evidence: [PUBLIC_VALIDATION_RESULTS.md](PUBLIC_VALIDATION_RESULTS.md), [MODEL_SELECTION_AUDIT.md](MODEL_SELECTION_AUDIT.md).
+
+## 13. Критерии CASE 2
+
+ТЗ:
+
+```text
+ROC AUC ≥ 0.75
+human explainability / accessibility ≥ 80%
+```
+
+Текущий competition/internal validation snapshot:
+
+```text
+Period ROC AUC          0.8701
+Period PR AUC           0.8060
+Operator-equal ROC AUC  ~0.882
+```
+
+Это подтверждает превышение целевого ROC AUC **в текущем internal competition protocol**, но не заменяет внешнюю hidden/population validation.
+
+Критерий объяснимости ≥80% пока нельзя считать измеренно выполненным. Нужен отдельный зафиксированный human-acceptance test среди целевой аудитории HR.
+
+См. [EXPLAINABILITY_ACCEPTANCE_PROTOCOL.md](EXPLAINABILITY_ACCEPTANCE_PROTOCOL.md).
+
+## 14. Что уже проверяется CI, а что CI не доказывает
+
+CI может подтвердить:
+
+- public hygiene;
+- Python tests/import;
+- frontend build/typecheck;
+- Docker/compose build;
+- API-container `/health` smoke.
+
+CI public repo **не доказывает**:
+
+- реальную ML quality закрытого runtime;
+- full on-prem E2E inference;
+- latency полного pipeline;
+- 1×A100 resource ceiling;
+- human explainability ≥80%;
+- внешнюю bank hidden validation.
+
+## 15. Remaining release-level evidence
+
+Перед freeze evaluator snapshot нужно заполнить:
+
+- [ ] public commit/tag;
+- [ ] CASE 1 model_id + runtime build;
+- [ ] CASE 2 model_id + runtime build;
+- [ ] validation report identity/date;
+- [ ] connected-runtime container/image digests;
+- [ ] on-prem E2E smoke;
+- [ ] measured 1×A100 resource/latency report;
+- [ ] human explainability acceptance report;
+- [ ] runtime dependency/license manifest;
+- [ ] forbidden-model check;
+- [ ] final public/private leakage review.
+
+## 16. Итог
+
+Сильная сторона решения — не декларация «всё выполнено», а проверяемое разделение:
+
+```text
+что уже реализовано
+что уже измерено
+что доказано только на current validation
+что ещё требует release-level evidence
+```
+
+Такой подход позволяет обсуждать конкурсный MVP честно и технически предметно, не раскрывая proprietary model IP и не завышая степень validation.
