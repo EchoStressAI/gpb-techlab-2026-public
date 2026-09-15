@@ -68,25 +68,38 @@ python scripts/validate_customer_release_evidence.py path/to/customer.evidence.j
 
 ## 4. Human explainability ≥80%
 
-Техническая XAI-реализация сама по себе не доказывает human criterion. Для рецензентов используется:
+Техническая XAI-реализация сама по себе не доказывает human criterion. Текущий frozen HR protocol использует четыре вопроса по шкале 1–5.
 
-`EXPLAINABILITY_ACCEPTANCE_TEMPLATE.csv`
+Файлы:
 
-Обязательные поля:
+- [EXPLAINABILITY_REVIEWER_FORM.md](EXPLAINABILITY_REVIEWER_FORM.md) — форма для HR reviewer;
+- `EXPLAINABILITY_ACCEPTANCE_TEMPLATE.csv` — структура ответов для расчёта.
 
-- `reviewer_id` — псевдоним/анонимизированный ID рецензента;
+Обязательные поля CSV:
+
+- `respondent_id` — псевдоним/анонимизированный ID HR-респондента;
+- `explanation_case_id` — безопасный review-case ID;
 - `case_id`;
-- `sample_id` — безопасный demo/review ID, не банковский filename;
-- `explanation_understandable` — да/нет;
-- `decision_support_usable` — да/нет;
+- `q1_result_clarity` — понятность результата, 1–5;
+- `q2_feature_clarity` — понятность факторов, 1–5;
+- `q3_actionability` — достаточность для следующего действия, 1–5;
+- `q4_safety_clarity` — понятность, что signal ≠ диагноз/автоматическое HR-решение, 1–5;
 - `comments` — опционально.
 
-Одна оценка считается принятой только если одновременно:
+Frozen основной indicator:
 
 ```text
-explanation_understandable = yes
-AND
-decision_support_usable = yes
+accepted respondent-case rating = Q2 >= 4 AND Q3 >= 4
+
+Explainability Acceptance Rate =
+  accepted respondent-case ratings
+  / all valid respondent-case ratings
+```
+
+PASS по критерию:
+
+```text
+Explainability Acceptance Rate >= 0.80
 ```
 
 Подсчёт:
@@ -97,16 +110,17 @@ python scripts/score_explainability_acceptance.py responses.csv \
   --output docs/release_evidence/explainability_acceptance_summary.json
 ```
 
-Скрипт выводит:
+Скрипт дополнительно выводит:
 
-- число валидных оценок;
-- число уникальных reviewers/samples;
-- долю понятных объяснений;
-- долю объяснений, пригодных для decision support;
-- joint acceptance rate;
-- observed PASS/BELOW_TARGET относительно 0.80.
+- число уникальных HR respondents;
+- число explanation cases;
+- число валидных respondent-case ratings;
+- распределение оценок по респондентам;
+- Q1/Q2/Q3/Q4 rate `>=4`, mean и median;
+- основной acceptance rate;
+- Wilson 95% CI для основного acceptance rate.
 
-`PASS` означает только наблюдаемую долю в данном наборе ответов. Он не доказывает репрезентативность выборки автоматически.
+ТЗ не задаёт минимальный sample size, поэтому обязательный порог числа респондентов не придумывается. Маленькая выборка должна быть прямо указана как ограничение.
 
 ## 5. A100 / target-hardware evidence
 
