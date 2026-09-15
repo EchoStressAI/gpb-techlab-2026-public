@@ -63,6 +63,8 @@ def main() -> int:
     parser.add_argument("--explainability-summary", type=Path)
     parser.add_argument("--public-commit")
     parser.add_argument("--public-tag")
+    parser.add_argument("--require-protected", action="store_true")
+    parser.add_argument("--require-image-digest", action="store_true")
     parser.add_argument("--require-a100", action="store_true")
     parser.add_argument("--require-human-xai", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
@@ -89,6 +91,12 @@ def main() -> int:
     if audit.get("audit_passed") is not True or audit.get("violation_count") != 0:
         failures.append("customer delivery audit is not a clean PASS")
 
+    if args.require_protected:
+        if acceptance.get("mode") != "protected":
+            failures.append("protected acceptance mode is required")
+        if audit.get("source_hardening_passed") is not True:
+            failures.append("source_hardening_passed=true is required")
+
     c1_model = (customer_models.get("case1_primary") or {}).get("model_id")
     c2_model = (customer_models.get("case2_primary") or {}).get("model_id")
     if c1_model != CASE1_MODEL_ID:
@@ -113,7 +121,10 @@ def main() -> int:
 
     image_digest = release_identity.get("image_digest")
     if not image_digest:
-        warnings.append("image_digest is empty")
+        if args.require_image_digest:
+            failures.append("immutable image_digest is required")
+        else:
+            warnings.append("image_digest is empty")
 
     a100_detected = bool((runtime.get("hardware") or {}).get("a100_detected"))
     if args.require_a100 and not a100_detected:
@@ -133,7 +144,7 @@ def main() -> int:
 
     status = "PASS" if not failures else "INCOMPLETE"
     payload = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "status": status,
         "public_snapshot": {
             "repository": "EchoStressAI/gpb-techlab-2026-public",
@@ -175,8 +186,10 @@ def main() -> int:
             "criterion_80_percent_pass": human_pass,
         },
         "requirements": {
-            "require_a100_for_this_manifest": args.require_a100,
-            "require_human_xai_for_this_manifest": args.require_human_xai,
+            "require_protected": args.require_protected,
+            "require_image_digest": args.require_image_digest,
+            "require_a100": args.require_a100,
+            "require_human_xai": args.require_human_xai,
         },
         "failures": failures,
         "warnings": warnings,
