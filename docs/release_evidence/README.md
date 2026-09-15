@@ -43,7 +43,7 @@ The draft machine-readable manifest is [PRE_RELEASE_MANIFEST.json](PRE_RELEASE_M
 
 ## Evidence tools already available
 
-The repository now contains two small standard-library tools that can be used before the final snapshot exists.
+The repository contains standard-library tools that can be used before the final snapshot exists.
 
 ### 1. Validate customer-safe runtime evidence
 
@@ -61,11 +61,24 @@ python scripts/validate_customer_release_evidence.py customer.evidence.json \
   --profile final
 ```
 
-The final profile additionally requires a protected acceptance mode, source-hardening PASS, release ID and immutable image digest.
+The final profile additionally requires protected acceptance mode, source-hardening PASS, release ID and immutable image digest.
 
-### 2. Score the human explainability acceptance survey
+### 2. Score the frozen HR explainability survey
 
-Use [EXPLAINABILITY_ACCEPTANCE_TEMPLATE.csv](EXPLAINABILITY_ACCEPTANCE_TEMPLATE.csv) for anonymized reviewer responses and calculate the observed joint acceptance rate with:
+Use:
+
+- [EXPLAINABILITY_REVIEWER_FORM.md](EXPLAINABILITY_REVIEWER_FORM.md) — reviewer-facing four-question form;
+- [EXPLAINABILITY_ACCEPTANCE_TEMPLATE.csv](EXPLAINABILITY_ACCEPTANCE_TEMPLATE.csv) — machine-readable response structure.
+
+The frozen protocol uses Q1–Q4 on a 1–5 scale. The primary acceptance rule is:
+
+```text
+Q2 feature clarity >= 4
+AND
+Q3 actionability >= 4
+```
+
+Score the responses with:
 
 ```bash
 python scripts/score_explainability_acceptance.py responses.csv \
@@ -73,12 +86,30 @@ python scripts/score_explainability_acceptance.py responses.csv \
   --output explainability_acceptance_summary.json
 ```
 
-A single assessment is accepted only when the reviewer answers positively to both:
+The script reports unique HR respondents, explanation cases, Q1–Q4 rates/means/medians, the main acceptance rate and a Wilson 95% interval. It does not claim that the reviewer sample is representative.
 
-- explanation is understandable;
-- explanation can support a decision / next action.
+### 3. Assemble one public release manifest
 
-The script reports sample/reviewer counts and the observed rate; it does not claim that the reviewer sample is representative.
+Once customer-safe build evidence and runtime/hardware evidence exist, join them without manually copying fields:
+
+```bash
+python scripts/assemble_public_release_manifest.py \
+  --customer-evidence customer.evidence.json \
+  --runtime-evidence runtime_evidence.json \
+  --public-commit <public-main-sha> \
+  --output final_release_manifest.json
+```
+
+Strict gates are opt-in and fail closed:
+
+```text
+--require-protected
+--require-image-digest
+--require-a100
+--require-human-xai
+```
+
+If a required evidence class is missing, the manifest is `INCOMPLETE` and the command exits non-zero.
 
 Full workflow: [RELEASE_EVIDENCE_RUNBOOK.md](RELEASE_EVIDENCE_RUNBOOK.md).
 
