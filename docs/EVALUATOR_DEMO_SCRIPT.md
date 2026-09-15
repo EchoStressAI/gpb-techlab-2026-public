@@ -1,10 +1,10 @@
 # Evaluator Demo Script · 10–12 минут
 
-Этот сценарий предназначен для демонстрации проекта жюри/заказчику. Он построен так, чтобы показать **не только успешный score, но и корректное поведение системы на границах**, соответствующее ТЗ и заявленной методологии.
+Этот сценарий предназначен для демонстрации **публичной конкурсной версии**. Он должен совпадать с тем, что реально показывает public frontend, и не требовать внутренних research/debug панелей.
 
 ## 0. До начала
 
-Зафиксировать:
+Зафиксировать release identity:
 
 ```text
 public repo commit/tag
@@ -29,24 +29,24 @@ curl -i http://127.0.0.1:8080/api/v1/readiness
 Показать два сценария:
 
 ```text
-CASE 1 · клиент · <=60 сек · риск внешнего воздействия
-CASE 2 · сотрудник · <=180 сек · относительный риск/состояние
+CASE 1 · клиент · первые 60 сек · дополнительный риск-сигнал внешнего воздействия
+CASE 2 · сотрудник · первые 180 сек · относительный employee-period/state risk signal
 ```
 
 Ключевая формулировка:
 
-> Система даёт дополнительный объяснимый сигнал и quality/evidence, а не автономный диагноз или юридический вывод.
+> Система даёт дополнительный model signal и ограничения его интерпретации, а не автономный диагноз или юридический вывод.
 
 ## 2. 60 секунд · архитектура
 
-Показать схему:
+Показать:
 
 ```text
 Frontend
-→ API / case routing
-→ fixed 60/180-sec horizon
-→ local case runtime
-→ PRIMARY + quality/evidence + safe explanation
+→ Public Integration API
+→ case routing / contract validation
+→ local CASE 1 / CASE 2 runtime
+→ PRIMARY + public-safe quality/evidence semantics
 ```
 
 Подчеркнуть:
@@ -60,14 +60,16 @@ Frontend
 
 Загрузить безопасный demo-файл CASE 1.
 
-Показать:
+На **public UI** показать только то, что реально доступно в публичной projection:
 
 1. выбран CASE 1;
-2. фиксированное окно 60 сек;
-3. PRIMARY result/decision status;
-4. evidence sufficiency;
-5. model id/provenance;
-6. следующий допустимый шаг.
+2. окно `0–60 сек`;
+3. PRIMARY result / decision status;
+4. `primary_score`, если система не abstain;
+5. `evidence_status`;
+6. `model_id`;
+7. public-safe словесную интерпретацию;
+8. transcript — только если у пользователя есть соответствующее право и demo-data безопасны.
 
 Формулировка:
 
@@ -77,13 +79,13 @@ Frontend
 
 - «вероятность мошенничества X%»;
 - «модель доказала воздействие»;
-- «операторская речь подтверждает состояние клиента».
+- «operator workflow подтверждает состояние клиента».
 
 ## 4. 1 минута · CASE 1 insufficient evidence
 
-Загрузить/открыть заранее подготовленный пример, где клиент почти не говорил.
+Показать заранее подготовленный безопасный пример, где client evidence недостаточно.
 
-Показать:
+Ожидаемый public outcome:
 
 ```text
 INSUFFICIENT_EVIDENCE / limited evidence
@@ -91,128 +93,130 @@ INSUFFICIENT_EVIDENCE / limited evidence
 
 Объяснить:
 
-> Отсутствие достаточного сигнала не превращается автоматически в «клиент безопасен».
+> Отсутствие достаточного наблюдения не превращается автоматически в «низкий риск».
 
-Это одна из ключевых защит системы.
+Это ключевой safety-механизм CASE 1.
 
 ## 5. 2 минуты · CASE 2
 
 Загрузить безопасный demo-файл CASE 2.
 
-Показать:
+На **public UI** показать:
 
-1. окно 180 сек;
-2. relative score/risk band;
-3. model id;
-4. quality/speech coverage;
-5. безопасные factor families / XAI summary;
-6. responsible-use disclaimer.
+1. окно `0–180 сек`;
+2. relative `risk_score` / `risk_band`;
+3. `model_id`;
+4. validated unit / employee-period semantics;
+5. reference percentile, если он доступен в runtime contract;
+6. публичную оговорку: score — относительный index, а не probability/diagnosis.
 
-Ключевая формулировка:
+Public frontend намеренно **не показывает** exact internal feature names, numeric feature contributions, thresholds, imputed-feature lists, anxiety formula и research-only supporting outputs. Поэтому demo не должен обещать эти элементы на публичном экране.
 
-> Это относительный speech-based signal состояния/риска, а не медицинская диагностика и не автоматическое HR-решение.
+Если на закрытом внутреннем стенде есть richer XAI/supporting view, его нужно явно называть **private/internal product view**, а не выдавать за содержимое public repo.
 
-## 6. 1 минута · история / period semantics
+## 6. 1 минута · history / period semantics
 
-Если final runtime/frontend включает history:
+Если текущий public snapshot действительно содержит employee history и connected runtime отдаёт её корректно:
 
-- показать несколько наблюдений одного employee id;
-- подчеркнуть chronological/as-of semantics;
-- не делать вывод по одной строке;
+- показать chronology;
+- подчеркнуть, что одна строка не равна диагнозу;
 - не использовать будущие звонки для объяснения прошлого результата.
 
-Если history в snapshot не включена — этот блок пропустить, не имитировать её synthetic data.
+Если history в конкретном release snapshot не готова end-to-end — блок пропустить. Не имитировать production history synthetic данными без явной маркировки.
 
 ## 7. 1 минута · почему CASE 2 acoustic-first
 
-Коротко объяснить engineering choice:
+Короткая формулировка:
 
-> Мы исследовали acoustic и textual branches. PRIMARY оставили проще, если text/fusion не давал устойчивого выигрыша, потому что это снижает deployment complexity и повышает объяснимость.
+> Мы сравнили acoustic, text и fusion. Fusion дал только небольшой прирост относительно Acoustic11 при дополнительной ASR/text complexity, поэтому PRIMARY оставили acoustic-first.
 
-Не выдавать наличие дополнительной модальности за доказанный прирост качества.
+Это model-selection argument, а не утверждение, что текст в принципе бесполезен.
 
-## 8. 1 минута · валидация
+## 8. 1 минута · validation
 
-Показать aggregate metrics только с правильной семантикой.
+Показать aggregate results с правильной семантикой.
 
-CASE 1:
+### CASE 1
 
-- основной критерий — PR AUC;
-- дополнительно ROC AUC / weighted F1 / safe-negative behavior;
-- отдельно показать shortcut audit.
+```text
+PR AUC       0.3654
+ROC AUC      0.7569
+Weighted F1  0.8190
+```
 
-CASE 2:
+Отдельно сказать, что более высокий operator-side result был отвергнут как финальный client claim после workflow-shortcut audit.
 
-- ROC AUC проверяется version-specific protocol;
-- explainability ≥80% — отдельный human-acceptance protocol, а не просто наличие XAI.
+### CASE 2
 
-Фраза:
+```text
+Period ROC AUC          0.8701
+Period PR AUC           0.8060
+Operator-equal ROC AUC  ~0.882
+```
 
-> CI доказывает работоспособность software contract. ML quality доказывает validation report. Это разные evidence layers.
+Обязательно добавить: это current competition/internal validation snapshot; within-person transition quality слабее, и внешний release claim требует дополнительной validation.
+
+Критерий explainability ≥80% — отдельный **human-acceptance** criterion. Наличие XAI-технологии или документации само по себе его не закрывает.
 
 ## 9. 30 секунд · fail-closed
 
-Если позволяет время, показать один технический boundary:
+Если позволяет время, показать технический boundary:
 
 - runtime unavailable;
 - readiness = not ready;
 - API не генерирует fake score.
 
-Это усиливает доверие больше, чем ещё один «идеальный» кейс.
-
 ## 10. 30 секунд · финал
 
-Финальная формулировка:
+> EchoStressAI объединяет два банковских сценария в on-prem-ready контур с фиксированными ранними окнами, versioned PRIMARY, evidence/quality semantics и human-in-the-loop. Мы отдельно проверяем не только метрику, но и происхождение сигнала, чтобы не выдавать workflow shortcut или эмоциональный proxy за целевой риск.
 
-> EchoStressAI объединяет два банковских сценария в один on-prem-ready контур: фиксированное раннее окно, объяснимый PRIMARY, quality/evidence и human-in-the-loop. Мы отдельно проверяем не только метрику, но и происхождение сигнала, чтобы не выдавать procedural shortcut или эмоциональный proxy за целевой риск.
-
-## 11. Что должно быть подготовлено заранее
+## 11. Что подготовить заранее
 
 - 1 безопасный CASE 1 demo;
 - 1 CASE 1 insufficient-evidence demo;
 - 1 безопасный CASE 2 demo;
-- при необходимости history example;
+- history example — только если он реально входит в release snapshot;
 - release/model IDs;
-- validation summary;
-- prerecorded screen capture как аварийный fallback с явной маркировкой;
+- public validation summary;
+- prerecorded fallback с явной маркировкой `recorded`;
 - локальный Docker/runtime snapshot.
 
 ## 12. Что не должно находиться в public demo bundle
 
 - реальные банковские аудио без отдельного разрешения;
 - реальные персональные transcripts;
+- row-level validation predictions;
 - internal feature tables;
-- exact model coefficients;
+- exact model coefficients/thresholds;
 - model weights, если их публикация не разрешена;
 - passwords/tokens;
-- row-level validation predictions.
+- production hostnames/IPs, не предназначенные для публикации.
 
 ## 13. Вопросы, к которым быть готовыми
 
 - Почему PR AUC CASE 1 ниже ROC AUC?
-- Почему вы отказались от operator-only сильного сигнала?
-- Почему CASE 2 не использует text в PRIMARY?
-- Как измеряется explainability ≥80%?
-- Где доказательство 1×A100 / latency?
+- Почему operator-only сильный signal не стал PRIMARY?
+- Почему CASE 2 acoustic-first?
+- Почему 0.87 не называется финальной внешней production validation?
+- Как отдельно измеряется explainability ≥80%?
+- Где measured evidence для 1×A100 и latency?
 - Почему weights нет в public Git?
 - Как обеспечивается on-prem?
-- Как вы избегаете диагноза по одному звонку?
-- Чем quality/evidence отличается от score?
+- Почему один звонок не равен burnout diagnosis?
 
-Ответы должны совпадать с Model Cards, Validation Protocol и FAQ.
+Ответы должны совпадать с Model Cards, Public Claims Register, Validation Protocol и FAQ.
 
 ## 14. Demo pass rule
 
-Демонстрация считается успешной, если reviewer после неё может ответить:
+Demo считается содержательно успешным, если reviewer после него понимает:
 
 ```text
 что решает каждый CASE
 какое окно используется
-что означает score
-когда системе нельзя доверять результату
-какой следующий шаг
-какие claims подтверждены validation
-что остаётся proprietary/runtime-specific
+что означает PRIMARY score
+что public UI действительно показывает
+когда evidence недостаточно
+какие metrics подтверждены текущим protocol
+что ещё требует release/human/deployment evidence
+где проходит public/private boundary
 ```
-
-Если это понятно — demo показывает продукт, а не только набор моделей.
