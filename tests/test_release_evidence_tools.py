@@ -115,12 +115,12 @@ def test_customer_release_validator_functional_and_final(tmp_path: Path) -> None
 def test_explainability_acceptance_scorer(tmp_path: Path) -> None:
     responses = tmp_path / "responses.csv"
     responses.write_text(
-        "reviewer_id,case_id,sample_id,explanation_understandable,decision_support_usable,comments\n"
-        "r1,CASE_1,s1,yes,yes,\n"
-        "r1,CASE_2,s2,yes,yes,\n"
-        "r2,CASE_1,s3,yes,yes,\n"
-        "r2,CASE_2,s4,yes,yes,\n"
-        "r3,CASE_2,s5,yes,no,\n",
+        "respondent_id,explanation_case_id,case_id,q1_result_clarity,q2_feature_clarity,q3_actionability,q4_safety_clarity,comments\n"
+        "hr1,e1,CASE_2,5,5,5,5,\n"
+        "hr1,e2,CASE_2,4,4,4,5,\n"
+        "hr2,e3,CASE_2,4,5,4,4,\n"
+        "hr2,e4,CASE_2,5,4,5,4,\n"
+        "hr3,e5,CASE_2,4,4,3,5,\n",
         encoding="utf-8",
     )
 
@@ -132,9 +132,11 @@ def test_explainability_acceptance_scorer(tmp_path: Path) -> None:
     )
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
-    assert payload["valid_assessments"] == 5
-    assert payload["accepted_assessments"] == 4
-    assert payload["joint_acceptance_rate"] == 0.8
+    assert payload["valid_respondent_case_ratings"] == 5
+    assert payload["accepted_ratings"] == 4
+    assert payload["main_acceptance_rate"] == 0.8
+    assert payload["protocol_rule"] == "Q2>=4 AND Q3>=4"
+    assert payload["unique_hr_respondents"] == 3
     assert payload["status"] == "PASS"
 
 
@@ -143,9 +145,11 @@ def test_public_release_manifest_assembler_respects_required_gates(tmp_path: Pat
     runtime = runtime_evidence()
     human = {
         "status": "PASS",
-        "joint_acceptance_rate": 0.8,
-        "valid_assessments": 10,
-        "unique_reviewers": 5,
+        "protocol_rule": "Q2>=4 AND Q3>=4",
+        "main_acceptance_rate": 0.8,
+        "main_acceptance_wilson_95_ci": [0.49, 0.94],
+        "valid_respondent_case_ratings": 10,
+        "unique_hr_respondents": 5,
     }
 
     customer_path = tmp_path / "customer.json"
@@ -156,7 +160,7 @@ def test_public_release_manifest_assembler_respects_required_gates(tmp_path: Pat
     runtime_path.write_text(json.dumps(runtime), encoding="utf-8")
     human_path.write_text(json.dumps(human), encoding="utf-8")
 
-    incomplete = run_script(
+    complete_for_selected_gates = run_script(
         "assemble_public_release_manifest.py",
         "--customer-evidence",
         str(customer_path),
@@ -171,11 +175,12 @@ def test_public_release_manifest_assembler_respects_required_gates(tmp_path: Pat
         "--output",
         str(output_path),
     )
-    assert incomplete.returncode == 0, incomplete.stderr
-    payload = json.loads(incomplete.stdout)
+    assert complete_for_selected_gates.returncode == 0, complete_for_selected_gates.stderr
+    payload = json.loads(complete_for_selected_gates.stdout)
     assert payload["status"] == "PASS"
     assert payload["hardware"]["a100_detected"] is True
     assert payload["human_explainability"]["criterion_80_percent_pass"] is True
+    assert payload["human_explainability"]["main_acceptance_rate"] == 0.8
 
     runtime["hardware"]["a100_detected"] = False
     runtime_path.write_text(json.dumps(runtime), encoding="utf-8")
@@ -195,3 +200,50 @@ def test_public_release_manifest_assembler_respects_required_gates(tmp_path: Pat
     failed = json.loads(missing_a100.stdout)
     assert failed["status"] == "INCOMPLETE"
     assert any("A100" in item for item in failed["failures"])
+
+
+def test_public_release_manifest_strict_protected_gate(tmp_path: Path) -> None:
+    customer = customer_evidence()
+    runtime = runtime_evidence()
+    customer_path = tmp_path / "customer.json"
+    runtime_path = tmp_path / "runtime.json"
+    output_path = tmp_path / "final.json"
+    customer_path.write_text(json.dumps(customer), encoding="utf-8")
+    runtime_path.write_text(json.dumps(runtime), encoding="utf-8")
+
+    strict_before = run_script(
+        "assemble_public_release_manifest.py",
+        "--customer-evidence",
+        str(customer_path),
+        "--runtime-evidence",
+        str(runtime_path),
+        "--require-protected",
+        "--require-image-digest",
+        "--public-commit",
+        "abc123",
+        "--output",
+        str(output_path),
+    )
+    assert strict_before.returncode == 1
+
+    customer["acceptance"]["mode"] = "protected"
+    customer["release_gate"]["mode"] = "protected"
+    customer["release_identity"]["image_digest"] = "sha256:" + "c" * 64
+    customer["docker"]["audit"]["source_hardening_passed"] = True
+    customer_path.write_text(json.dumps(customer), encoding="utf-8")
+
+    strict_after = run_script(
+        "assemble_public_release_manifest.py",
+        "--customer-evidence",
+        str(customer_path),
+        "--runtime-evidence",
+        str(runtime_path),
+        "--require-protected",
+        "--require-image-digest",
+        "--public-commit",
+        "abc123",
+        "--output",
+        str(output_path),
+    )
+    assert strict_after.returncode == 0, strict_after.stderr
+    assert json.loads(strict_after.stdout)["status"] == "PASS"
