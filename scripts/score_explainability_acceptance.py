@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
-"""Score the GPB human explainability acceptance survey.
+"""Score the GPB HR explainability acceptance survey.
 
-This script does not decide whether a study is representative. It reports the
-number of valid assessments and the observed acceptance rate for the two
-questions stated in the specification-oriented validation evidence:
-1) is the explanation understandable;
-2) can it support a decision / next action.
+Frozen protocol semantics:
+- Q1 result clarity: 1..5
+- Q2 feature/explanation clarity: 1..5
+- Q3 actionability: 1..5
+- Q4 safety-of-interpretation clarity: 1..5
+- one rating is accepted iff Q2 >= 4 AND Q3 >= 4
+- main criterion passes iff observed acceptance rate >= target (default 0.80)
 
-A row is counted as accepted only when both answers are positive.
+The script reports sample composition and a Wilson 95% interval, but it does not
+claim that the respondent sample is representative.
 """
 
 from __future__ import annotations
@@ -15,103 +18,139 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
+import statistics
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
-TRUE_VALUES = {"1", "true", "yes", "y", "да", "+"}
-FALSE_VALUES = {"0", "false", "no", "n", "нет", "-"}
 REQUIRED_COLUMNS = {
-    "reviewer_id",
+    "respondent_id",
+    "explanation_case_id",
     "case_id",
-    "sample_id",
-    "explanation_understandable",
-    "decision_support_usable",
+    "q1_result_clarity",
+    "q2_feature_clarity",
+    "q3_actionability",
+    "q4_safety_clarity",
 }
+QUESTIONS = (
+    "q1_result_clarity",
+    "q2_feature_clarity",
+    "q3_actionability",
+    "q4_safety_clarity",
+)
 
 
-def parse_bool(value: str, field: str, row_num: int) -> bool:
-    token = value.strip().lower()
-    if token in TRUE_VALUES:
-        return True
-    if token in FALSE_VALUES:
-        return False
-    raise ValueError(f"row {row_num}: {field} must be yes/no or 1/0, got {value!r}")
+def parse_rating(value: str, field: str, row_num: int) -> int:
+    try:
+        rating = int(value.strip())
+    except ValueError as exc:
+        raise ValueError(f"row {row_num}: {field} must be an integer 1..5") from exc
+    if rating < 1 or rating > 5:
+        raise ValueError(f"row {row_num}: {field} must be in 1..5, got {rating}")
+    return rating
+
+
+def wilson_interval(successes: int, total: int, z: float = 1.96) -> tuple[float, float]:
+    if total <= 0:
+        return (0.0, 0.0)
+    p = successes / total
+    denom = 1 + (z * z) / total
+    center = (p + (z * z) / (2 * total)) / denom
+    margin = (
+        z
+        * math.sqrt((p * (1 - p) / total) + ((z * z) / (4 * total * total)))
+        / denom
+    )
+    return (max(0.0, center - margin), min(1.0, center + margin))
 
 
 def score(path: Path, target: float) -> dict[str, Any]:
-    rows: list[dict[str, str]] = []
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle)
         missing = REQUIRED_COLUMNS - set(reader.fieldnames or [])
         if missing:
             raise SystemExit(f"Missing required columns: {', '.join(sorted(missing))}")
-        for row in reader:
-            rows.append(row)
+        rows = list(reader)
 
     if not rows:
         raise SystemExit("Survey file contains no assessments")
 
-    accepted = 0
-    understandable_yes = 0
-    usable_yes = 0
+    respondent_counts: Counter[str] = Counter()
     case_counts: Counter[str] = Counter()
-    reviewer_ids: set[str] = set()
-    sample_ids: set[str] = set()
+    explanation_ids: set[str] = set()
+    ratings: dict[str, list[int]] = {question: [] for question in QUESTIONS}
+    accepted = 0
     errors: list[str] = []
 
-    for idx, row in enumerate(rows, start=2):
+    for row_num, row in enumerate(rows, start=2):
+        respondent_id = row["respondent_id"].strip()
+        explanation_case_id = row["explanation_case_id"].strip()
+        case_id = row["case_id"].strip()
+        if not respondent_id or not explanation_case_id or not case_id:
+            errors.append(
+                f"row {row_num}: respondent_id, explanation_case_id and case_id must be non-empty"
+            )
+            continue
+
         try:
-            understandable = parse_bool(row["explanation_understandable"], "explanation_understandable", idx)
-            usable = parse_bool(row["decision_support_usable"], "decision_support_usable", idx)
+            parsed = {
+                question: parse_rating(row[question], question, row_num)
+                for question in QUESTIONS
+            }
         except ValueError as exc:
             errors.append(str(exc))
             continue
 
-        case_id = row["case_id"].strip()
-        reviewer = row["reviewer_id"].strip()
-        sample = row["sample_id"].strip()
-        if not case_id or not reviewer or not sample:
-            errors.append(f"row {idx}: reviewer_id, case_id and sample_id must be non-empty")
-            continue
-
+        respondent_counts[respondent_id] += 1
         case_counts[case_id] += 1
-        reviewer_ids.add(reviewer)
-        sample_ids.add(sample)
-        understandable_yes += int(understandable)
-        usable_yes += int(usable)
-        accepted += int(understandable and usable)
+        explanation_ids.add(explanation_case_id)
+        for question, value in parsed.items():
+            ratings[question].append(value)
+        accepted += int(
+            parsed["q2_feature_clarity"] >= 4 and parsed["q3_actionability"] >= 4
+        )
 
-    valid = sum(case_counts.values())
+    valid = sum(respondent_counts.values())
     if valid == 0:
         raise SystemExit("No valid survey assessments")
 
-    acceptance_rate = accepted / valid
-    understandable_rate = understandable_yes / valid
-    usable_rate = usable_yes / valid
+    main_rate = accepted / valid
+    ci_low, ci_high = wilson_interval(accepted, valid)
+
+    per_question: dict[str, Any] = {}
+    for question in QUESTIONS:
+        values = ratings[question]
+        per_question[question] = {
+            "rate_ge_4": round(sum(value >= 4 for value in values) / valid, 6),
+            "mean": round(statistics.mean(values), 6),
+            "median": statistics.median(values),
+        }
 
     return {
-        "status": "PASS" if acceptance_rate >= target else "BELOW_TARGET",
+        "status": "PASS" if main_rate >= target else "BELOW_TARGET",
         "target_acceptance_rate": target,
-        "valid_assessments": valid,
+        "protocol_rule": "Q2>=4 AND Q3>=4",
+        "valid_respondent_case_ratings": valid,
         "invalid_rows": len(errors),
-        "unique_reviewers": len(reviewer_ids),
-        "unique_samples": len(sample_ids),
+        "unique_hr_respondents": len(respondent_counts),
+        "unique_explanation_cases": len(explanation_ids),
+        "ratings_per_respondent": dict(sorted(respondent_counts.items())),
         "case_counts": dict(sorted(case_counts.items())),
-        "explanation_understandable_rate": round(understandable_rate, 6),
-        "decision_support_usable_rate": round(usable_rate, 6),
-        "joint_acceptance_rate": round(acceptance_rate, 6),
-        "accepted_assessments": accepted,
+        "question_metrics": per_question,
+        "accepted_ratings": accepted,
+        "main_acceptance_rate": round(main_rate, 6),
+        "main_acceptance_wilson_95_ci": [round(ci_low, 6), round(ci_high, 6)],
         "errors": errors,
         "interpretation_note": (
-            "PASS means only that the observed joint positive share in this supplied survey file is at or above the target. "
-            "It does not by itself establish representativeness, external validity, or an HR-policy decision."
+            "PASS means only that the observed Q2>=4 AND Q3>=4 share in this supplied survey dataset is at or above the target. "
+            "It does not by itself establish representativeness, external validity, or permission for autonomous HR decisions."
         ),
     }
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Score human explainability acceptance responses")
+    parser = argparse.ArgumentParser(description="Score GPB HR explainability acceptance responses")
     parser.add_argument("responses", type=Path)
     parser.add_argument("--target", type=float, default=0.80)
     parser.add_argument("--output", type=Path)
