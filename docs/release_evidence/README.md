@@ -41,6 +41,47 @@ The draft machine-readable manifest is [PRE_RELEASE_MANIFEST.json](PRE_RELEASE_M
 - offline/no-egress acceptance;
 - human explainability acceptance result for the ≥80% criterion.
 
+## Evidence tools already available
+
+The repository now contains two small standard-library tools that can be used before the final snapshot exists.
+
+### 1. Validate customer-safe runtime evidence
+
+A runtime/release pipeline can emit a reduced external JSON containing only customer-safe release identity, model IDs and delivery-gate status. Validate it with:
+
+```bash
+python scripts/validate_customer_release_evidence.py customer.evidence.json \
+  --profile functional
+```
+
+For the final source-hardened release:
+
+```bash
+python scripts/validate_customer_release_evidence.py customer.evidence.json \
+  --profile final
+```
+
+The final profile additionally requires a protected acceptance mode, source-hardening PASS, release ID and immutable image digest.
+
+### 2. Score the human explainability acceptance survey
+
+Use [EXPLAINABILITY_ACCEPTANCE_TEMPLATE.csv](EXPLAINABILITY_ACCEPTANCE_TEMPLATE.csv) for anonymized reviewer responses and calculate the observed joint acceptance rate with:
+
+```bash
+python scripts/score_explainability_acceptance.py responses.csv \
+  --target 0.80 \
+  --output explainability_acceptance_summary.json
+```
+
+A single assessment is accepted only when the reviewer answers positively to both:
+
+- explanation is understandable;
+- explanation can support a decision / next action.
+
+The script reports sample/reviewer counts and the observed rate; it does not claim that the reviewer sample is representative.
+
+Full workflow: [RELEASE_EVIDENCE_RUNBOOK.md](RELEASE_EVIDENCE_RUNBOOK.md).
+
 ## Why these items are not filled from memory
 
 Release evidence must identify the exact artifact that was actually executed. A metric from an earlier experiment, a development server, another GPU, or a technical XAI implementation cannot be silently promoted into evidence for the final release image.
