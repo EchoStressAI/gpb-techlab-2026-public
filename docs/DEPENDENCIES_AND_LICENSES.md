@@ -77,7 +77,22 @@ CASE-specific runtime может иметь собственные зависи�
 
 Их состав должен фиксироваться в version-specific runtime manifest/SBOM, но не обязан раскрываться в public Git, если это противоречит IP/licensing boundary.
 
-## 5. Third-party model / data policy
+## 5. Важное license exception: openSMILE
+
+CASE 2 использует frozen acoustic extraction stack на `openSMILE 2.5.1` / `eGeMAPSv02 Functionals`.
+
+Upstream openSMILE прямо указывает dual-licensing model: публичная/open-source версия предназначена для private/research/educational use, а использование в commercial product требует отдельной commercial development license от audEERING.
+
+Официальные upstream references:
+
+- https://github.com/audeering/opensmile#licensing
+- https://github.com/audeering/opensmile-python#license
+
+Поэтому package metadata/SBOM сам по себе **не является доказательством commercial-use clearance** для runtime, содержащего openSMILE. Для hackathon/evaluation release этот компонент должен быть явно отмечен как release-specific licensing review item. Для production/commercial handover требуется отдельно подтвердить подходящее лицензионное основание либо заменить extractor и повторно доказать feature/model parity.
+
+Этот документ не делает юридического вывода о применимости конкретной лицензии к условиям Техлаба; он фиксирует технически значимый licensing boundary, который нельзя скрывать за зелёным CI.
+
+## 6. Third-party model / data policy
 
 Перед включением любого third-party model artifact, dataset fragment или proprietary SDK в поставку нужно отдельно проверить:
 
@@ -90,13 +105,13 @@ CASE-specific runtime может иметь собственные зависи�
 
 Если право публикации/redistribution не подтверждено, компонент не включается в public repository по умолчанию.
 
-## 6. Public Git ≠ open-source license
+## 7. Public Git ≠ open-source license
 
 Публичная видимость repository не означает автоматически выдачу лицензии на весь проект. Repo-level rights notice описан в `NOTICE.md`.
 
 Каждая third-party dependency при этом остаётся под своей собственной лицензией.
 
-## 7. Recommended release checks
+## 8. Recommended release checks
 
 Перед tag/release:
 
@@ -105,27 +120,29 @@ CASE-specific runtime может иметь собственные зависи�
 2. build frontend from package-lock
 3. resolve/freeze Python environment used by image
 4. generate SBOM
-5. scan package licenses
+5. scan package licenses + review known license exceptions
 6. scan known vulnerabilities
 7. record image digest + commit SHA
 8. review NOTICE / attribution requirements
 9. verify private runtime manifest separately
+10. record release-purpose licensing basis for restricted runtime components
 ```
 
-## 8. Что CI проверяет сейчас
+## 9. Что CI проверяет сейчас
 
 Current public CI проверяет build/tests/public hygiene, но это **не полный license-compliance или SBOM pipeline**.
 
 Это различие важно: зелёный CI означает, что public software contract собрался/прошёл проверки, но не заменяет release-level dependency governance.
 
-## 9. Release evidence
+## 10. Release evidence
 
 Итоговая поставка/демонстрация должна позволять ответить на вопросы:
 
 - из какого commit собран public layer;
 - какие exact dependency versions попали в image;
-- какие лицензии требуют attribution;
+- какие лицензии требуют attribution или отдельного release review;
 - какой runtime/model release подключён;
-- какой image digest фактически запущен.
+- какой image digest фактически запущен;
+- какие license exceptions остаются evaluation-only / pending production clearance.
 
 Связанный документ: `PUBLIC_RELEASE_VERSIONING.md`.
