@@ -1,0 +1,60 @@
+{
+  "release": {
+    "public_repo_commit": "<git sha>",
+    "public_repo_tag": "<optional tag>",
+    "runtime_build_id": "<build id>",
+    "created_at": "<ISO-8601>"
+  },
+  "deployment": {
+    "mode": "on-prem",
+    "container_digests": {
+      "integration_api": "<sha256:...>",
+      "frontend": "<sha256:...>",
+      "case1_runtime": "<sha256:...>",
+      "case2_runtime": "<sha256:...>"
+    },
+    "external_network_required_for_inference": false
+  },
+  "case1": {
+    "case_id": "CASE_1",
+    "analysis_horizon_sec": 60,
+    "model_id": "<model id>",
+    "model_family_public_name": "<public-safe model family>",
+    "framework": "<framework/version>",
+    "artifact_hash": "<sha256 or internal release hash>",
+    "license_status": "<approved/review-required>",
+    "forbidden_ready_models_check": {
+      "TIM-Net": false,
+      "ABK": false,
+      "GigaAM Emo": false
+    }
+  },
+  "case2": {
+    "case_id": "CASE_2",
+    "analysis_horizon_sec": 180,
+    "model_id": "<model id>",
+    "model_family_public_name": "<public-safe model family>",
+    "framework": "<framework/version>",
+    "artifact_hash": "<sha256 or internal release hash>",
+    "license_status": "<approved/review-required>",
+    "forbidden_ready_models_check": {
+      "TIM-Net": false,
+      "ABK": false,
+      "GigaAM Emo": false
+    }
+  },
+  "resources": {
+    "gpu_profile": "1x NVIDIA A100",
+    "benchmark_report_id": "<id/path>",
+    "peak_gpu_memory_mb": null,
+    "peak_host_ram_mb": null,
+    "case1_warm_p90_latency_sec": null,
+    "case2_warm_p90_latency_sec": null
+  },
+  "validation": {
+    "case1_report_id": "<id/path>",
+    "case2_report_id": "<id/path>",
+    "explainability_acceptance_report_id": "<id/path or pending>"
+  },
+  "notes": "Template only. Do not place secrets, bank identifiers, local filesystem paths or proprietary coefficients here."
+}
