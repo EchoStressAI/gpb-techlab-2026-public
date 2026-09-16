@@ -1,6 +1,6 @@
 {
   "status": "PRE_RELEASE_DRAFT",
-  "evidence_cutoff_date": "2026-09-15",
+  "evidence_cutoff_date": "2026-09-17",
   "public_repository": "EchoStressAI/gpb-techlab-2026-public",
   "public_snapshot_commit": null,
   "public_release_tag": null,
@@ -20,7 +20,7 @@
   "case2": {
     "model_id": "CASE2_OPEN_ACOUSTIC11_ORIENTED_V1",
     "analysis_horizon_sec": 180,
-    "target_role": "SUPPORT_EMPLOYEE",
+    "target_role": "SUPPORT_OPERATOR",
     "validated_unit": "employee_period",
     "score_semantics": "relative state/risk signal; not calibrated probability or diagnosis",
     "validation_status": "SUPPORTED",
@@ -30,17 +30,17 @@
     "runtime_artifact_identity": "PENDING_FINAL_RELEASE_SNAPSHOT"
   },
   "release_evidence": {
-    "public_ci": "PENDING_FINAL_SNAPSHOT",
-    "docker_build_and_api_smoke": "AVAILABLE_IN_CI_ON_REVIEWED_BUNDLE; PENDING_FINAL_MAIN_SNAPSHOT",
-    "customer_release_evidence_validator": "READY_IN_PR24",
-    "explainability_acceptance_scorer": "READY_IN_PR24",
+    "public_ci": "PASS_CURRENT_MAIN_AS_OF_2026-09-17; PENDING_FINAL_SNAPSHOT_IDENTITY",
+    "docker_build_and_api_smoke": "PASS_FOR_PUBLIC_LAYER_CI; CONNECTED_FINAL_RUNTIME_ACCEPTANCE_PENDING",
+    "customer_release_evidence_validator": "READY_IN_MAIN",
+    "explainability_acceptance_scorer": "READY_IN_MAIN",
     "full_onprem_e2e": "PENDING",
     "container_image_digest": null,
-    "resolved_sbom": "PENDING",
+    "resolved_sbom": "PENDING_FINAL_ACCEPTED_IMAGE",
     "target_hardware_benchmark": "PENDING",
     "a100_compatibility": "PENDING_TARGET_HARDWARE_EVIDENCE",
     "human_explainability_80_percent": "PENDING_HUMAN_ACCEPTANCE_STUDY",
-    "offline_no_egress_acceptance": "PENDING"
+    "offline_no_egress_acceptance": "PENDING_PROTECTED_RUNTIME_ACCEPTANCE"
   },
   "claim_boundaries": {
     "control_without_ground_truth_is_auc_evidence": false,
@@ -53,6 +53,7 @@
   "notes": [
     "This manifest is intentionally not a final release snapshot.",
     "Null/PENDING fields must be filled only from measured release evidence.",
+    "Public-layer CI success does not prove connected model-runtime, A100, protected-image or human explainability acceptance.",
     "No bank identifiers, row-level predictions, private paths, secrets, exact thresholds or proprietary coefficients belong in the public manifest."
   ]
 }
