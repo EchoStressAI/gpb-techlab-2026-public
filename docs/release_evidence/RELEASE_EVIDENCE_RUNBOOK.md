@@ -72,10 +72,12 @@ python scripts/validate_customer_release_evidence.py path/to/customer.evidence.j
 
 Файлы:
 
-- [EXPLAINABILITY_REVIEWER_FORM.md](EXPLAINABILITY_REVIEWER_FORM.md) — форма для HR reviewer;
+- [EXPLAINABILITY_STUDY_RUNBOOK.md](EXPLAINABILITY_STUDY_RUNBOOK.md) — порядок freeze → safe case pack → blind review → scoring → versioned report;
+- [EXPLAINABILITY_REVIEWER_FORM.md](EXPLAINABILITY_REVIEWER_FORM.md) — единая форма для HR reviewer;
+- `EXPLAINABILITY_CASE_PACK_TEMPLATE.csv` — безопасная мета-структура review cases без bank IDs/ground truth;
 - `EXPLAINABILITY_ACCEPTANCE_TEMPLATE.csv` — структура ответов для расчёта.
 
-Обязательные поля CSV:
+Обязательные поля CSV ответов:
 
 - `respondent_id` — псевдоним/анонимизированный ID HR-респондента;
 - `explanation_case_id` — безопасный review-case ID;
