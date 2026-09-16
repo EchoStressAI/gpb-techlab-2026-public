@@ -4,13 +4,15 @@ import type { RiskResponse } from '../../types';
 import { getRisk } from '../../api/calls';
 import { ApiError } from '../../api/client';
 import { Notice } from './UploadPanel';
+import { Case2ExplanationBlock, case2PublicExplanation } from './PublicExplanation';
 
 /**
  * Public-safe CASE 2 panel.
  *
- * В публичном UI остаются PRIMARY score/band, model id и reference percentile.
- * Exact thresholds, imputed feature names, numeric feature contributions and
- * research-only/legacy outputs intentionally stay inside the local runtime.
+ * В публичном UI остаются PRIMARY score/band, model id, reference percentile
+ * и human-readable semantic explanation. Exact thresholds, imputed feature
+ * names, numeric feature contributions and research-only/legacy outputs
+ * intentionally stay inside the local runtime.
  */
 export function RiskPanel({ jobId }: { jobId: string }) {
   const [data, setData] = useState<RiskResponse | null>(null);
@@ -44,6 +46,7 @@ export function RiskPanel({ jobId }: { jobId: string }) {
   if (primary.status !== 'OK') {
     return <Notice tone="warning">Основная модель недоступна или данных недостаточно: {primary.status}.</Notice>;
   }
+  const explanation = case2PublicExplanation(primary);
 
   return (
     <div style={{
@@ -56,15 +59,17 @@ export function RiskPanel({ jobId }: { jobId: string }) {
       </div>
       {primary.risk_band && <div style={{ marginTop: 6, fontSize: 16 }}>{primary.risk_band}</div>}
       <div style={{ marginTop: 10, fontSize: 13, lineHeight: 1.7, opacity: 0.75 }}>
-        Это ранговый индекс, а не вероятность выгорания. Точные model coefficients,
-        feature values, thresholds и intermediate research signals в публичном интерфейсе
-        не раскрываются.
+        Это ранговый индекс, а не вероятность выгорания. Публичное объяснение
+        показывает только смысловые акустические факторы; точные model coefficients,
+        feature values, thresholds и numeric contributions не раскрываются.
       </div>
       <div style={{ marginTop: 12, fontSize: 13, lineHeight: 1.8 }}>
         <div><span style={{ opacity: 0.6 }}>Модель:</span> {primary.model_id ?? '—'}</div>
         <div><span style={{ opacity: 0.6 }}>Единица наблюдения:</span> {primary.validated_unit ?? '—'}</div>
         <div><span style={{ opacity: 0.6 }}>Перцентиль reference:</span> {typeof primary.reference_percentile === 'number' ? primary.reference_percentile.toFixed(1) : '—'}</div>
       </div>
+
+      {explanation && <Case2ExplanationBlock explanation={explanation} />}
     </div>
   );
 }

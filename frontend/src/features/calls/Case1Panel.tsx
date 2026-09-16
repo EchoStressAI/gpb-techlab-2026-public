@@ -5,14 +5,15 @@ import { ApiError } from '../../api/client';
 import { CASE1_DECISION_LABEL } from '../../types';
 import type { Case1Response } from '../../types';
 import { Notice } from './UploadPanel';
+import { Case1ExplanationBlock, case1PublicExplanation } from './PublicExplanation';
 
 /**
  * Public-safe CASE 1 panel.
  *
- * Публичный экран показывает PRIMARY decision, ранговый score и evidence
- * sufficiency. Exact internal state dimensions, research-only influence layer,
- * missing feature names, diagnostic-domain internals and QDS are intentionally
- * not visualized here.
+ * Публичный экран показывает PRIMARY decision, ранговый score, evidence
+ * sufficiency и безопасную интерпретацию/следующий шаг. Exact internal state
+ * dimensions, research-only influence layer, missing feature names,
+ * diagnostic-domain internals and QDS are intentionally not visualized here.
  */
 export function Case1Panel({ jobId }: { jobId: string }) {
   const [data, setData] = useState<Case1Response | null>(null);
@@ -49,6 +50,7 @@ export function Case1Panel({ jobId }: { jobId: string }) {
 
   const decision = primary.decision_status ?? '';
   const abstain = decision === 'INSUFFICIENT_EVIDENCE';
+  const explanation = case1PublicExplanation(primary);
 
   return (
     <div style={{
@@ -76,6 +78,8 @@ export function Case1Panel({ jobId }: { jobId: string }) {
         <div><span style={{ opacity: 0.6 }}>Достаточность данных:</span> {primary.evidence_status ?? '—'}</div>
         <div><span style={{ opacity: 0.6 }}>Решение:</span> {decision || '—'}</div>
       </div>
+
+      {explanation && <Case1ExplanationBlock explanation={explanation} />}
 
       <div style={{ marginTop: 12, fontSize: 12, opacity: 0.65, lineHeight: 1.6 }}>
         Внутренние feature values, формула тревожности, research-only layers и
