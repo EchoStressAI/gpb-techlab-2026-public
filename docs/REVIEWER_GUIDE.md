@@ -1,166 +1,240 @@
-# Reviewer Guide · EchoStressAI GPB TechLab 2026
+# Reviewer Guide · EchoStressAI × GPB TechLab 2026
 
-Этот документ — короткий маршрут для жюри, заказчика и технического reviewer. Его задача — позволить понять решение за 5–10 минут, не заставляя читать весь репозиторий подряд.
+Этот маршрут рассчитан на жюри, заказчика и технического reviewer. За **5–10 минут** он должен дать ответ на пять вопросов:
 
-## 1. Что решает система
+1. что именно решает система;
+2. какие результаты уже получены;
+3. как устроен demo/product flow;
+4. чем подтверждаются claims;
+5. что ещё относится к release-specific acceptance, а не объявляется выполненным заранее.
 
-В проекте два независимых банковских сценария:
+---
 
-- **CASE 1** — ранний дополнительный сигнал риска внешнего психологического воздействия на клиента;
-- **CASE 2** — речевой сигнал состояния сотрудника с интерпретацией на уровне рабочего периода/динамики, а не как медицинский диагноз.
+## 30 секунд: суть решения
 
-Рабочие горизонты зафиксированы:
+**EchoStressAI — речевой ИИ-контур для двух банковских сценариев:**
+
+|  | CASE 1 | CASE 2 |
+|---|---|---|
+| Задача | возможное внешнее воздействие на клиента | неблагоприятное состояние / риск выгорания сотрудника |
+| Сторона | клиент | сотрудник поддержки |
+| Окно | первые **60 сек** | первые **180 сек** |
+| PRIMARY | `CASE1_INDUCTIVE_CDF_PRIMARY_V1` | `CASE2_OPEN_ACOUSTIC11_ORIENTED_V1` |
+| Семантика | ранний ranking signal + evidence sufficiency | relative employee-period signal |
+
+Система не заменяет банковский регламент, медицинскую оценку или решение HR. Она добавляет **ранний измеримый сигнал + объяснение + контроль достаточности данных**.
+
+---
+
+## 1 минута: ключевые результаты
+
+| Метрика | CASE 1 | CASE 2 |
+|---|---:|---:|
+| PR AUC | **0.3654** | **0.8060** |
+| ROC AUC | **0.7569** | **0.8701** |
+| Weighted F1 | **0.8190** | — |
+| Operator-equal ROC AUC | — | **0.8818** |
+
+Что важно при чтении цифр:
+
+- CASE 1 PRIMARY — **CLIENT-only**; высокий operator-side result не используется как production claim после shortcut audit;
+- CASE 2 `ROC AUC 0.8701` относится к текущему competition/internal employee-period protocol, а не к заявлению об окончательной внешней population validation;
+- CONTROL без открытой ground truth не превращается в самостоятельно заявленную AUC;
+- score в обоих кейсах — не calibrated probability.
+
+Evidence: [PUBLIC_VALIDATION_RESULTS.md](PUBLIC_VALIDATION_RESULTS.md) · [MODEL_SELECTION_AUDIT.md](MODEL_SELECTION_AUDIT.md) · [PUBLIC_CLAIMS_REGISTER.md](PUBLIC_CLAIMS_REGISTER.md).
+
+---
+
+## Что смотреть на демонстрации
+
+### Шаг 1 · загрузка
+
+Загружается одна запись или batch. CASE выбирается явно, а модель получает только разрешённое временное окно.
+
+### Шаг 2 · PRIMARY
+
+**CASE 1:** основной client-side сигнал + зона решения.  
+**CASE 2:** relative employee-period score / band.
+
+### Шаг 3 · evidence / quality
+
+Reviewer должен проверить, что система умеет **не выдавать красивое число любой ценой**:
+
+- недостаток клиентской речи → `INSUFFICIENT_EVIDENCE`;
+- недоступный runtime → fail-closed;
+- quality/supporting state отделены от PRIMARY;
+- отсутствие observation не трактуется как безопасность.
+
+### Шаг 4 · объяснение
+
+CASE 2 показывает public-safe смысловые группы факторов, а не proprietary coefficients/contributions. CASE 1 показывает достаточность наблюдения, supporting state/evidence и следующий шаг, но supporting слой не выдаётся за вход PRIMARY.
+
+### Шаг 5 · действие
+
+Результат заканчивается human-in-the-loop следующим шагом, а не автономным решением о клиенте или сотруднике.
+
+---
+
+## Почему это техническая поставка, а не исследовательский notebook
+
+В проекте разделены четыре контура:
 
 ```text
-CASE 1 → первые 60 секунд
-CASE 2 → первые 180 секунд
+Research
+   ↓ freeze / validation
+Frozen model runtime
+   ↓ versioned contract
+Integration API + Frontend
+   ↓ release gates
+Docker / on-prem evaluator snapshot
 ```
 
-Это часть model contract, а не UI-настройка.
+Проверяемые свойства:
 
-## 2. Что посмотреть сначала
+- versioned `model_id` для обоих PRIMARY;
+- fixed horizons 60/180 сек;
+- API contract и case routing;
+- frontend build/typecheck;
+- Docker/compose;
+- fail-closed behavior;
+- public/private IP boundary;
+- shortcut/confound audit;
+- version-specific validation evidence;
+- release-evidence tooling.
 
-Рекомендуемый порядок:
+Архитектура: [ARCHITECTURE.md](ARCHITECTURE.md) · [RUNTIME_CONTRACT.md](RUNTIME_CONTRACT.md) · [SUBMISSION_MANIFEST.md](SUBMISSION_MANIFEST.md).
 
-1. [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) — что решаем;
-2. [METHODOLOGY.md](METHODOLOGY.md) — безопасная смысловая структура ML и границы интерпретации;
-3. [DIAGRAMS.md](DIAGRAMS.md) — архитектура;
-4. [CASE1_MODEL_CARD.md](CASE1_MODEL_CARD.md) и [CASE2_MODEL_CARD.md](CASE2_MODEL_CARD.md) — модельные границы;
-5. [VALIDATION_EVIDENCE_INDEX.md](VALIDATION_EVIDENCE_INDEX.md) — где и чем подтверждается качество;
-6. [REQUIREMENTS_TRACEABILITY.md](REQUIREMENTS_TRACEABILITY.md) — соответствие требованиям;
-7. [SUBMISSION_MANIFEST.md](SUBMISSION_MANIFEST.md) — состав публичной части и подключаемых компонентов.
+---
 
-## 3. Как устроено решение
+## Что особенно проверить в CASE 1
 
-```text
-Frontend
-   ↓
-Public integration/API layer
-   ↓
-case routing + fixed horizon
-   ↓
-local CASE 1 / CASE 2 model runtime
-   ↓
-PRIMARY result + quality/evidence + safe explanation
-```
+Reviewer должен увидеть:
 
-Публичный репозиторий содержит проверяемый integration/UI слой и документацию. Case-specific serving artifacts могут подключаться локально и не обязаны публиковаться как открытые model weights/source.
+1. финальный сигнал строится по **клиентской стороне**;
+2. модель ограничена первыми **60 сек**;
+3. ranking score не подписан как вероятность;
+4. `INSUFFICIENT_EVIDENCE` имеет приоритет над числом score;
+5. operator-workflow shortcut не перенесён в финальный claim;
+6. supporting state/evidence визуально и семантически отделены от PRIMARY.
 
-## 4. Что важно увидеть в CASE 1
+Подробнее: [CASE1_MODEL_CARD.md](CASE1_MODEL_CARD.md).
 
-Reviewer должен проверить пять вещей:
+---
 
-1. анализируется именно клиентская сторона;
-2. используется раннее окно 60 секунд;
-3. score не называется вероятностью, если он не откалиброван как вероятность;
-4. недостаток клиентской речи приводит к `insufficient evidence`, а не автоматически к низкому риску;
-5. итоговый сигнал сопровождается качеством наблюдения и рекомендацией следующего шага.
+## Что особенно проверить в CASE 2
 
-Смысловая структура CASE 1 описана в [CASE1_MODEL_CARD.md](CASE1_MODEL_CARD.md).
+Reviewer должен увидеть:
 
-## 5. Что важно увидеть в CASE 2
-
-Reviewer должен проверить:
-
-1. анализируется речь сотрудника;
-2. рабочее окно — 180 секунд;
-3. используются интерпретируемые семейства акустико-речевой информации;
-4. score трактуется как относительный model signal/индекс, а не как диагноз или автоматическое HR-решение;
-5. speech coverage, history availability и другие ограничения не скрываются внутри одного числа;
-6. explainability описывает поведение модели, а не причинный психологический диагноз.
+1. анализируется речь сотрудника в первых **180 сек**;
+2. PRIMARY интерпретируется на уровне employee-period / series-of-observations;
+3. score не является медицинским диагнозом или вероятностью выгорания;
+4. explanation описывает поведение модели, а не психологическую причинность;
+5. supporting fatigue/distress не выдаются за вход Acoustic PRIMARY;
+6. история не раскрывает exact model internals и технические thresholds.
 
 Подробнее: [CASE2_MODEL_CARD.md](CASE2_MODEL_CARD.md).
 
-## 6. Что означает public/private boundary
+---
 
-Публичная проверяемость здесь означает, что можно увидеть:
+## Что уже закрыто по ТЗ
 
-- API и frontend;
-- case routing;
-- фиксированные временные окна;
-- contracts;
-- Docker/integration topology;
-- fail-closed поведение;
-- quality/evidence semantics;
-- model cards;
-- validation protocol;
-- scientific rationale;
-- synthetic tests.
+В public/source слое можно проверить:
 
-При этом публичность **не требует** раскрывать:
+- два независимых сценария;
+- 60/180-sec contracts;
+- UI загрузки и результата;
+- batch/postprocessing semantics;
+- Python/FastAPI integration backend;
+- Docker build;
+- on-prem architecture;
+- научную методологию;
+- CASE 1 / CASE 2 validation evidence;
+- документацию архитектуры, deployment и компонентов.
+
+Отдельным release evidence остаются measured A100/latency, final image digest/SBOM/E2E и human explainability acceptance ≥80%.
+
+Полная матрица: [GPB_TZ_COMPLIANCE.md](GPB_TZ_COMPLIANCE.md).
+
+---
+
+## Как читать evidence
+
+Не смешивать:
+
+```text
+software CI
+≠ ML performance
+≠ semantic/expert validation
+≠ human explainability acceptance
+≠ measured deployment benchmark
+≠ business effect
+```
+
+Поэтому наличие зелёного CI не используется как доказательство AUC, а наличие XAI-компонента — как автоматическое доказательство критерия понятности ≥80%.
+
+Навигация: [VALIDATION_EVIDENCE_INDEX.md](VALIDATION_EVIDENCE_INDEX.md).
+
+---
+
+## Public / private boundary
+
+Публично проверяются:
+
+- integration API;
+- frontend;
+- routing/contracts;
+- Docker/CI;
+- model identities;
+- aggregate validation;
+- scientific/methodological rationale;
+- safe explanation semantics.
+
+Не публикуются:
 
 - банковские аудио/транскрипты;
-- training datasets/notebooks;
-- model weights;
-- точные coefficients/scalers/imputers;
-- внутреннюю формулу тревожности;
-- универсальную интегральную/fusion/personal-baseline методологию EchoStressAI.
+- training datasets и research notebooks;
+- private weights/checkpoints;
+- exact proprietary coefficients/scalers/imputers/thresholds;
+- внутренняя anxiety formula;
+- universal integral/fusion/personal-baseline methodology.
 
 Подробнее: [IP_AND_PUBLIC_BOUNDARY.md](IP_AND_PUBLIC_BOUNDARY.md).
 
-## 7. Как читать validation
+---
 
-Нужно различать три разные вещи:
+## 5-минутный маршрут по репозиторию
 
-```text
-CI / contract correctness
-≠
-ML performance
-≠
-expert/semantic validity
-```
+1. **[README](../README.md)** — продукт, результаты, demo path.
+2. **[PUBLIC_VALIDATION_RESULTS.md](PUBLIC_VALIDATION_RESULTS.md)** — метрики и caveats.
+3. **[CASE1_MODEL_CARD.md](CASE1_MODEL_CARD.md)** / **[CASE2_MODEL_CARD.md](CASE2_MODEL_CARD.md)** — модельные границы.
+4. **[ARCHITECTURE.md](ARCHITECTURE.md)** — технический контур.
+5. **[GPB_TZ_COMPLIANCE.md](GPB_TZ_COMPLIANCE.md)** — ТЗ point-by-point.
+6. **[PUBLIC_CLAIMS_REGISTER.md](PUBLIC_CLAIMS_REGISTER.md)** — что команда готова утверждать публично, а что сознательно не завышает.
+7. **[TEAM.md](TEAM.md)** — компетенции команды.
 
-GitHub Actions проверяет код, contracts и public hygiene. Model quality подтверждается отдельным version-specific validation evidence. Экспертная рецензия помогает проверять интерпретацию и классы ошибок, но не объявляется банковской ground truth.
+Если есть ещё пять минут: [SCIENTIFIC_BACKGROUND.md](SCIENTIFIC_BACKGROUND.md) · [EXPERT_REVIEW_AND_VALIDATION.md](EXPERT_REVIEW_AND_VALIDATION.md) · [DEPLOYMENT.md](DEPLOYMENT.md).
 
-См. [VALIDATION_PROTOCOL.md](VALIDATION_PROTOCOL.md), [VALIDATION_EVIDENCE_INDEX.md](VALIDATION_EVIDENCE_INDEX.md) и [CASE2_EXPERT_REVIEW_LESSONS.md](CASE2_EXPERT_REVIEW_LESSONS.md).
+---
 
-## 8. Что считать сильным результатом демонстрации
+## Техническая smoke-проверка
 
-Хорошая демонстрация должна показать не только успешный score, но и корректное поведение системы на границах:
-
-- CASE 1 и CASE 2 маршрутизируются независимо;
-- применяются правильные horizons;
-- score сопровождается semantic label/quality;
-- `limited/insufficient evidence` виден пользователю;
-- недоступный runtime не заменяется synthetic/fake score;
-- frontend не выдаёт supporting signal за PRIMARY;
-- результат не интерпретируется сильнее, чем позволяет validation.
-
-## 9. Как быстро проверить техническую часть
-
-После запуска:
+После запуска public integration layer:
 
 ```bash
 curl -fsS http://127.0.0.1:8080/health
 curl -i http://127.0.0.1:8080/api/v1/readiness
 ```
 
-Для end-to-end проверки требуется подключённый локальный case runtime и безопасный demo-аудиофайл. Отсутствие runtime должно давать явное fail-closed состояние.
+`/health` означает, что API жив. `/readiness` проверяет connected runtime. ML quality подтверждается отдельным validation evidence — эти уровни не подменяют друг друга.
 
-## 10. Частые вопросы
+---
 
-**Почему model weights не лежат в public Git?**  
-Публичный Git предназначен для прозрачности архитектуры, интерфейсов, поведения и методологии. Serving artifacts могут поставляться/подключаться отдельно без публикации proprietary weights.
+## Финальный критерий хорошего demo
 
-**Можно ли считать CASE 2 медицинской диагностикой?**  
-Нет. Это speech-based research/operational signal и human-in-the-loop инструмент.
+После демонстрации reviewer должен унести четыре ясных тезиса:
 
-**Почему один score недостаточен?**  
-Потому что качество наблюдения, фактический объём речи и ограничения конкретного звонка могут существенно влиять на интерпретацию.
-
-**Почему эксперт и модель могут расходиться?**  
-Они могут видеть разные временные окна, разные конструкты и разный объём релевантного материала. Это отдельно разобрано в expert-review documentation.
-
-## 11. Рекомендуемый финальный маршрут
-
-```text
-Overview
-→ Methodology / Model Cards
-→ Architecture
-→ Validation Evidence
-→ Requirements Traceability
-→ Demo
-→ Limitations / Responsible Use
-```
-
-Такой порядок даёт сначала смысл решения, затем техническую проверяемость и только потом детали ограничений.
+> **1. Два кейса действительно разные и имеют разные PRIMARY/окна.**  
+> **2. Результаты измерены и не завышены shortcut/CONTROL claims.**  
+> **3. Система умеет честно отказаться от вывода при недостатке evidence.**  
+> **4. Это уже интеграционный продуктовый контур с UI/API/Docker/on-prem, а не только исследовательская модель.**
