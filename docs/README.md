@@ -59,7 +59,7 @@ versioned local model runtime
 
 - [SCIENTIFIC_BACKGROUND.md](SCIENTIFIC_BACKGROUND.md) — научный контекст.
 - [SCIENTIFIC_REFERENCES.md](SCIENTIFIC_REFERENCES.md) — ключевые источники.
-- [GPB_SCIENTIFIC_SOURCE_MAP.md](GPB_SCIENTIFIC_SOURCE_MAP.md) — связь источников из ТЗ с проектом.
+- [GPB_TZ_SCIENCE_SOURCE_MAP.md](GPB_TZ_SCIENCE_SOURCE_MAP.md) — связь источников из ТЗ с проектом.
 
 ### 5. Explainability / quality / responsible use
 
@@ -68,7 +68,9 @@ versioned local model runtime
 - [QUALITY_AND_EVIDENCE.md](QUALITY_AND_EVIDENCE.md) — quality/evidence semantics.
 - [ERROR_MODEL.md](ERROR_MODEL.md) — технические и модельные ошибки.
 - [LIMITATIONS_AND_RESPONSIBLE_USE.md](LIMITATIONS_AND_RESPONSIBLE_USE.md) — границы интерпретации.
-- [MODEL_RISK_AND_PILOT_MONITORING.md](MODEL_RISK_AND_PILOT_MONITORING.md) — model risk / drift / pilot monitoring.
+- [MODEL_RISK_REGISTER.md](MODEL_RISK_REGISTER.md) — model risk register.
+- [MONITORING_AND_DRIFT.md](MONITORING_AND_DRIFT.md) — monitoring / drift governance.
+- [PILOT_ACCEPTANCE_PLAN.md](PILOT_ACCEPTANCE_PLAN.md) — pilot acceptance plan.
 
 ### 6. Architecture / API / frontend
 
@@ -97,7 +99,8 @@ versioned local model runtime
 - [IP_AND_PUBLIC_BOUNDARY.md](IP_AND_PUBLIC_BOUNDARY.md) — public/private IP boundary.
 - [PUBLIC_REPOSITORY_POLICY.md](PUBLIC_REPOSITORY_POLICY.md) — правила публичного repository.
 - [DATA_PRIVACY_SECURITY.md](DATA_PRIVACY_SECURITY.md) — данные и ИБ.
-- [THREAT_MODEL_AND_DATA_LIFECYCLE.md](THREAT_MODEL_AND_DATA_LIFECYCLE.md) — threat model и lifecycle данных.
+- [SECURITY_THREAT_MODEL.md](SECURITY_THREAT_MODEL.md) — threat model.
+- [DATA_LIFECYCLE.md](DATA_LIFECYCLE.md) — lifecycle данных.
 - [../SECURITY.md](../SECURITY.md) — security policy.
 - [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md) — эксплуатация.
 - [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — диагностика.
@@ -159,7 +162,7 @@ Architecture
 ```text
 System Requirements
 → Deployment
-→ Threat Model / Data Lifecycle
+→ Security Threat Model / Data Lifecycle
 → Dependencies / Licenses
 → Operations Runbook
 → Acceptance Checklist
